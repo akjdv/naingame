@@ -99,6 +99,8 @@ let miniChoicePulse = 0;
 let scooter = null;
 let teaGame = null;
 let nainride = null;
+let crackerCatch = null;
+let primeStack = null;
 let nainrideCheckpoint = false;
 let finalMiniRoute = "standard";
 let sTapTimes = [];
@@ -359,6 +361,34 @@ const player = {
 function L(){return levels[currentLevel]}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function rects(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
+function inputLeft(){
+  return !!(keys.a || keys.A || keys.ArrowLeft);
+}
+
+function inputRight(){
+  return !!(keys.d || keys.D || keys.ArrowRight);
+}
+
+function refreshMovementKey(key){
+  // Smooth movement: keydown sets held state, keyup/blur clears it.
+  // No timeout expiry, because that caused random pauses on some PCs/browsers.
+  if(key === "a" || key === "A" || key === "ArrowLeft"){
+    if(key === "a") keys.a = true;
+    if(key === "A") keys.A = true;
+    if(key === "ArrowLeft") keys.ArrowLeft = true;
+  }
+  if(key === "d" || key === "D" || key === "ArrowRight"){
+    if(key === "d") keys.d = true;
+    if(key === "D") keys.D = true;
+    if(key === "ArrowRight") keys.ArrowRight = true;
+  }
+}
+
+function clearMovementKeys(){
+  keys.a = false; keys.A = false; keys.ArrowLeft = false;
+  keys.d = false; keys.D = false; keys.ArrowRight = false;
+}
+
 function fastFallAllowed(){
   return sFastFallBlocked <= 0 && fastFallPulse > 0 && playerIsActuallyAirborne();
 }
@@ -550,7 +580,8 @@ function trackName(){
   if(miniMode==="crackerHeaven") return "cutscene";
   if(miniMode==="endingCutscene") return "cutscene";
   if(miniMode==="scooter") return "scooter";
-  if(miniMode==="nainride") return "scooter";
+  if(miniMode==="nainride" || miniMode==="crackerCatch") return "scooter";
+  if(miniMode==="primeStack") return "choice";
   if(miniMode==="tea") return "tea";
   if(miniMode==="choice") return "choice";
   if(currentLevel===0) return "grass";
@@ -699,8 +730,8 @@ function end(win){
 }
 
 function updatePlayer(){
-  const left = keys.a || keys.ArrowLeft;
-  const right = keys.d || keys.ArrowRight;
+  const left = inputLeft();
+  const right = inputRight();
   const jump = keys.w || keys.ArrowUp || keys[" "];
   const down = keys.s || keys.S || keys.ArrowDown;
 
@@ -1652,6 +1683,8 @@ function updateMiniGame(){
   if(miniMode === "scooter") updateScooter();
   else if(miniMode === "tea") updateTeaMini();
   else if(miniMode === "nainride") updateNainRide();
+  else if(miniMode === "crackerCatch") updateCrackerCatch();
+  else if(miniMode === "primeStack") updatePrimeStack();
   else if(miniMode === "boss") updateFinalBoss();
   else if(miniMode === "endingCutscene") updateHamishCutscene();
   else if(miniMode === "secretIntro") updateSecretIntro();
@@ -1728,6 +1761,198 @@ function updateScooter(){
     player.score += 5000;
     startFinalBossCheckpoint();
   }
+}
+
+function startCrackerCatch(){
+  finalMiniRoute = "crackerCatch";
+  miniMode = "crackerCatch";
+  crackerCatch = {
+    basketX: W/2-55,
+    time: 32,
+    lives: 4,
+    score: 0,
+    spawn: 0,
+    objects:[]
+  };
+  msg = "Cracker Catch: move with A/D and catch crackers. Avoid rocks.";
+  msgTimer = 150;
+  updateHud();
+}
+
+function updateCrackerCatch(){
+  if(!crackerCatch) return;
+  if(inputLeft()) crackerCatch.basketX -= 9;
+  if(inputRight()) crackerCatch.basketX += 9;
+  crackerCatch.basketX = clamp(crackerCatch.basketX, 40, W-150);
+
+  crackerCatch.time -= 1/60;
+  crackerCatch.spawn--;
+  if(crackerCatch.spawn <= 0){
+    crackerCatch.spawn = Math.max(16, 42 - Math.floor(crackerCatch.score/3));
+    crackerCatch.objects.push({
+      x: 70 + Math.random()*(W-140),
+      y: -30,
+      vy: 3.6 + Math.random()*2.2 + crackerCatch.score*.05,
+      bad: Math.random() < 0.28
+    });
+  }
+
+  const basket = {x:crackerCatch.basketX,y:610,w:110,h:34};
+  for(const o of crackerCatch.objects){
+    o.y += o.vy;
+    if(rects({x:o.x-16,y:o.y-16,w:32,h:32}, basket)){
+      if(o.bad){
+        crackerCatch.lives--;
+        sfx("hurt");
+        part(o.x,o.y,20,"hit");
+      } else {
+        crackerCatch.score++;
+        player.score += 180;
+        sfx("collect");
+        part(o.x,o.y,16,"cracker");
+      }
+      o.dead = true;
+    }
+    if(o.y > H+40) o.dead = true;
+  }
+  crackerCatch.objects = crackerCatch.objects.filter(o => !o.dead);
+
+  if(crackerCatch.lives <= 0){
+    sfx("hurt");
+    ui.overlay.style.display="grid";
+    ui.box.innerHTML=`<h1>Cracker Catch Failed</h1><p>Too many rocks hit the basket.</p><button id="restartBtn">Restart Whole Game</button>`;
+    document.getElementById("restartBtn").onclick=resetGame;
+    running=false;
+    return;
+  }
+
+  if(crackerCatch.time <= 0){
+    if(crackerCatch.score >= 18){
+      player.score += 3500;
+      startFinalBossCheckpoint();
+    } else {
+      ui.overlay.style.display="grid";
+      ui.box.innerHTML=`<h1>Not Enough Crackers</h1><p>You caught ${crackerCatch.score}/18 crackers.</p><button id="restartBtn">Restart Whole Game</button>`;
+      document.getElementById("restartBtn").onclick=resetGame;
+      running=false;
+    }
+  }
+}
+
+function drawCrackerCatch(){
+  const grd=ctx.createLinearGradient(0,0,0,H);
+  grd.addColorStop(0,"#7fdfff");
+  grd.addColorStop(1,"#f4c06a");
+  ctx.fillStyle=grd; ctx.fillRect(0,0,W,H);
+
+  ctx.fillStyle="rgba(0,0,0,.35)";
+  round(24,92,610,50,16); ctx.fill();
+  ctx.fillStyle="#fff";
+  ctx.font="900 21px Arial";
+  ctx.textAlign="left";
+  ctx.fillText(`Cracker Catch: ${crackerCatch.score}/18 · Lives ${crackerCatch.lives} · Time ${Math.ceil(crackerCatch.time)}`,42,124);
+
+  ctx.fillStyle="#6b3b1c";
+  round(crackerCatch.basketX,610,110,34,15); ctx.fill();
+  ctx.fillStyle="#e6b16a";
+  round(crackerCatch.basketX+12,600,86,20,10); ctx.fill();
+
+  for(const o of crackerCatch.objects){
+    ctx.save(); ctx.translate(o.x,o.y);
+    if(o.bad){
+      ctx.fillStyle="#333";
+      ctx.beginPath(); ctx.arc(0,0,18,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle="#777"; ctx.fillRect(-7,-5,14,4);
+    } else {
+      drawCracker();
+    }
+    ctx.restore();
+  }
+}
+
+function startPrimeStack(){
+  finalMiniRoute = "primeStack";
+  miniMode = "primeStack";
+  primeStack = {
+    stack:0,
+    target:10,
+    x:W/2,
+    y:120,
+    vx:5.2,
+    width:150,
+    placed:[],
+    miss:0
+  };
+  msg = "Prime Stack: press Space/click to drop bottles onto the tower.";
+  msgTimer = 150;
+  updateHud();
+}
+
+function dropPrimeBottle(){
+  if(miniMode !== "primeStack" || !primeStack) return;
+  const baseX = W/2;
+  const tolerance = Math.max(28, 70 - primeStack.stack*4);
+  const offset = Math.abs(primeStack.x - baseX);
+  if(offset <= tolerance){
+    primeStack.placed.push({x:primeStack.x,y:585-primeStack.stack*42});
+    primeStack.stack++;
+    primeStack.vx *= 1.08;
+    player.score += 300;
+    sfx("collect");
+    part(primeStack.x,585-primeStack.stack*42,20,"collect");
+    if(primeStack.stack >= primeStack.target){
+      player.score += 4000;
+      startFinalBossCheckpoint();
+    }
+  } else {
+    primeStack.miss++;
+    sfx("hurt");
+    screenShake = 10;
+    if(primeStack.miss >= 3){
+      ui.overlay.style.display="grid";
+      ui.box.innerHTML=`<h1>Prime Stack Fell</h1><p>Too many missed drops.</p><button id="restartBtn">Restart Whole Game</button>`;
+      document.getElementById("restartBtn").onclick=resetGame;
+      running=false;
+    }
+  }
+}
+
+function updatePrimeStack(){
+  if(!primeStack) return;
+  primeStack.x += primeStack.vx;
+  if(primeStack.x < 170 || primeStack.x > W-170) primeStack.vx *= -1;
+}
+
+function drawPrimeStack(){
+  ctx.fillStyle="#18233d";
+  ctx.fillRect(0,0,W,H);
+  ctx.fillStyle="rgba(255,255,255,.18)";
+  for(let i=0;i<12;i++) cloud(i*130,85+Math.sin(i)*25,.7);
+
+  ctx.fillStyle="rgba(0,0,0,.35)";
+  round(24,92,650,50,16); ctx.fill();
+  ctx.fillStyle="#fff";
+  ctx.font="900 21px Arial";
+  ctx.textAlign="left";
+  ctx.fillText(`Prime Stack: ${primeStack.stack}/${primeStack.target} · Misses ${primeStack.miss}/3 · Space/click to drop`,42,124);
+
+  ctx.strokeStyle="#ffffff";
+  ctx.lineWidth=3;
+  ctx.setLineDash([8,8]);
+  ctx.beginPath(); ctx.moveTo(W/2,185); ctx.lineTo(W/2,625); ctx.stroke();
+  ctx.setLineDash([]);
+
+  for(const b of primeStack.placed){
+    ctx.save(); ctx.translate(b.x,b.y); drawPrime(); ctx.restore();
+  }
+
+  ctx.save();
+  ctx.translate(primeStack.x,170);
+  drawPrime();
+  ctx.restore();
+
+  ctx.fillStyle="#5d3a20";
+  round(W/2-95,610,190,32,14); ctx.fill();
 }
 
 function startNainRide(){
@@ -1944,7 +2169,7 @@ function bossPlayerCollidePlatforms(){
 
 function updateFinalBoss(){
   if(!boss) setupFinalBoss();
-  const left=keys.a||keys.ArrowLeft, right=keys.d||keys.ArrowRight, jump=keys.w||keys.ArrowUp||keys[" "], down=keys.s||keys.S||keys.ArrowDown;
+  const left=inputLeft(), right=inputRight(), jump=keys.w||keys.ArrowUp||keys[" "], down=keys.s||keys.S||keys.ArrowDown;
   if(left){player.vx-=player.speed;player.face=-1}
   if(right){player.vx+=player.speed;player.face=1}
   if(!left&&!right&&player.grounded) player.vx*=friction;
@@ -2114,7 +2339,7 @@ function hamishRunCollidePlatforms(){
 
 function updateHamishRun(){
   if(!hamishRun) return;
-  const left=keys.a||keys.ArrowLeft, right=keys.d||keys.ArrowRight, jump=keys.w||keys.ArrowUp||keys[" "], down=keys.s||keys.S||keys.ArrowDown;
+  const left=inputLeft(), right=inputRight(), jump=keys.w||keys.ArrowUp||keys[" "], down=keys.s||keys.S||keys.ArrowDown;
 
   // Constant chase pressure: Nain must keep moving.
   if(left){player.vx-=player.speed*.85; player.face=-1;}
@@ -2444,6 +2669,8 @@ function drawMiniGame(){
   else if(miniMode === "scooter") drawScooterMini();
   else if(miniMode === "tea") drawTeaMini();
   else if(miniMode === "nainride") drawNainRideMini();
+  else if(miniMode === "crackerCatch") drawCrackerCatch();
+  else if(miniMode === "primeStack") drawPrimeStack();
   else if(miniMode === "boss") drawFinalBoss();
   else if(miniMode === "endingCutscene") drawHamishCutscene();
   else if(miniMode === "secretIntro") drawSecretIntro();
@@ -2461,21 +2688,23 @@ function drawMiniChoice(){
 
   ctx.textAlign = "center";
   ctx.fillStyle = "#fff";
-  ctx.font = "900 48px Arial";
-  ctx.fillText("Final Mini Game Choice",W/2,92);
+  ctx.font = "900 44px Arial";
+  ctx.fillText("Final Mini Game Choice",W/2,74);
 
-  ctx.font = "bold 18px Arial";
+  ctx.font = "bold 17px Arial";
   ctx.fillStyle = "#eadfff";
-  ctx.fillText("Choose how Nain reaches the final boss.",W/2,128);
+  ctx.fillText("Choose how Nain reaches the final boss.",W/2,108);
 
-  const pulse = Math.sin(miniChoicePulse)*4;
-  drawChoiceCard(55,190,350,330,"BEAM SCOOTER","Platformer scooter run. Crash and the whole run restarts.","1 / click",pulse);
-  drawChoiceCard(465,190,350,330,"TEA BREWING","Hard timed drag-and-drop brew with more steps, heat, and health penalties.","2 / click",-pulse);
-  drawChoiceCard(875,190,350,330,"NAINPACK NAINRIDE","Short Jetpack Joyride-style flight. Beat it to unlock a secret Hamish chase ending.","3 / click",pulse);
+  const pulse = Math.sin(miniChoicePulse)*3;
+  drawChoiceCard(35,145,225,245,"BEAM SCOOTER","Jump a deadly scooter course.","1 / click",pulse);
+  drawChoiceCard(280,145,225,245,"TEA BREWING","Hard timed drag-to-teapot brewing.","2 / click",-pulse);
+  drawChoiceCard(525,145,225,245,"NAINPACK","Jetpack Joyride-style flight.","3 / click",pulse);
+  drawChoiceCard(770,145,225,245,"CRACKER CATCH","Catch crackers, dodge rocks.","4 / click",-pulse);
+  drawChoiceCard(1015,145,225,245,"PRIME STACK","Drop Prime bottles into a tower.","5 / click",pulse);
 
-  ctx.font = "900 20px Arial";
+  ctx.font = "900 19px Arial";
   ctx.fillStyle = "#fff6a8";
-  ctx.fillText("1 = Scooter    2 = Tea Brewing    3 = Nainpack Nainride",W/2,615);
+  ctx.fillText("1 Scooter · 2 Tea · 3 Nainpack · 4 Cracker Catch · 5 Prime Stack",W/2,645);
 }
 
 function drawChoiceCard(x,y,w,h,title,body,hint,bounce){
@@ -2499,9 +2728,15 @@ function drawChoiceCard(x,y,w,h,title,body,hint,bounce){
     ctx.fillStyle="#1c1c1c"; round(x+130,y+115,125,32,14); ctx.fill();
     ctx.fillStyle="#48e1ff"; round(x+165,y+80,55,55,16); ctx.fill();
     ctx.fillStyle="#111"; ctx.beginPath(); ctx.arc(x+155,y+152,18,0,Math.PI*2); ctx.arc(x+235,y+152,18,0,Math.PI*2); ctx.fill();
+  } else if(title.includes("CATCH")){
+    ctx.fillStyle="#6b3b1c"; round(x+68,y+112,90,35,14); ctx.fill();
+    ctx.save(); ctx.translate(x+150,y+95); drawCracker(); ctx.restore();
+  } else if(title.includes("STACK")){
+    ctx.save(); ctx.translate(x+112,y+132); drawPrime(); ctx.restore();
+    ctx.save(); ctx.translate(x+112,y+88); drawPrime(); ctx.restore();
   } else {
-    ctx.fillStyle="#8b4a2a"; round(x+145,y+100,100,90,20); ctx.fill();
-    ctx.fillStyle="#d9f4ff"; ctx.beginPath(); ctx.arc(x+195,y+100,50,Math.PI,0); ctx.fill();
+    ctx.fillStyle="#8b4a2a"; round(x+70,y+95,90,80,20); ctx.fill();
+    ctx.fillStyle="#d9f4ff"; ctx.beginPath(); ctx.arc(x+115,y+95,45,Math.PI,0); ctx.fill();
   }
 
   ctx.fillStyle="#eee";
@@ -2716,6 +2951,8 @@ function updateHud(){
       miniMode === "choice" ? "Mini Choice" :
       miniMode === "scooter" ? "Beam Scooter" :
       miniMode === "nainride" ? "Nainpack Nainride" :
+      miniMode === "crackerCatch" ? "Cracker Catch" :
+      miniMode === "primeStack" ? "Prime Stack" :
       miniMode === "boss" ? "Final Boss" :
       miniMode === "secretIntro" ? "Secret Intro" :
       miniMode === "hamishRun" ? "Hamish Chase" :
@@ -2724,18 +2961,22 @@ function updateHud(){
     ui.itemName.textContent =
       miniMode === "tea" ? "Steps" :
       miniMode === "boss" ? "Boss HP" :
-      (miniMode === "scooter" || miniMode === "nainride" || miniMode === "hamishRun") ? "Distance" : "Goal";
+      (miniMode === "scooter" || miniMode === "nainride" || miniMode === "hamishRun") ? "Distance" : miniMode === "crackerCatch" ? "Caught" : miniMode === "primeStack" ? "Stack" : "Goal";
     ui.items.textContent =
       miniMode === "tea" && teaGame ? teaGame.step :
       miniMode === "scooter" && scooter ? Math.floor(scooter.x/100) :
       miniMode === "nainride" && nainride ? Math.floor(nainride.x/100) :
       miniMode === "hamishRun" && hamishRun ? Math.floor(player.x/100) :
+      miniMode === "crackerCatch" && crackerCatch ? crackerCatch.score :
+      miniMode === "primeStack" && primeStack ? primeStack.stack :
       miniMode === "boss" && boss ? (boss.n.maxHp-boss.n.hp) : 0;
     ui.total.textContent =
       miniMode === "tea" && teaGame ? teaGame.order.length :
       miniMode === "scooter" && scooter ? Math.floor(scooter.world/100) :
       miniMode === "nainride" && nainride ? Math.floor(nainride.world/100) :
       miniMode === "hamishRun" && hamishRun ? Math.floor(hamishRun.world/100) :
+      miniMode === "crackerCatch" && crackerCatch ? 18 :
+      miniMode === "primeStack" && primeStack ? primeStack.target :
       miniMode === "boss" && boss ? boss.n.maxHp : 1;
     ui.score.textContent = player.score;
     ui.timer.textContent = (running ? ((performance.now()-runStart)/1000) : finalTime).toFixed(2);
@@ -2815,9 +3056,11 @@ function canvasPos(evt){
 function handleMiniClick(x,y){
   initAudio();
   if(miniMode === "choice"){
-    if(x>=55 && x<=405 && y>=190 && y<=520){sfx("click"); startScooter();}
-    if(x>=465 && x<=815 && y>=190 && y<=520){sfx("click"); startTeaMini();}
-    if(x>=875 && x<=1225 && y>=190 && y<=520){sfx("click"); startNainRide();}
+    if(x>=35 && x<=260 && y>=145 && y<=390){sfx("click"); startScooter();}
+    if(x>=280 && x<=505 && y>=145 && y<=390){sfx("click"); startTeaMini();}
+    if(x>=525 && x<=750 && y>=145 && y<=390){sfx("click"); startNainRide();}
+    if(x>=770 && x<=995 && y>=145 && y<=390){sfx("click"); startCrackerCatch();}
+    if(x>=1015 && x<=1240 && y>=145 && y<=390){sfx("click"); startPrimeStack();}
   }
 }
 
@@ -2827,6 +3070,10 @@ canvas.addEventListener("mousedown", e => {
 
   if(miniMode === "choice"){
     handleMiniClick(p.x,p.y);
+    return;
+  }
+  if(miniMode === "primeStack"){
+    dropPrimeBottle();
     return;
   }
 
@@ -2885,6 +3132,7 @@ canvas.addEventListener("mouseup", e => {
 
 window.addEventListener("keydown", e => {
   initAudio();
+  refreshMovementKey(e.key);
   if(e.key === "s" || e.key === "S" || e.key === "ArrowDown"){
     const now = performance.now();
     const wasHeld = keys.s || keys.S || keys.ArrowDown;
@@ -2940,20 +3188,47 @@ window.addEventListener("keydown", e => {
     updateHud();
     return;
   }
+  if(miniMode === "primeStack" && (e.key === " " || e.key === "Enter")){
+    dropPrimeBottle();
+    e.preventDefault();
+    return;
+  }
   if(miniMode === "choice"){
     if(e.key === "1"){sfx("click"); startScooter();}
     if(e.key === "2"){sfx("click"); startTeaMini();}
     if(e.key === "3"){sfx("click"); startNainRide();}
+    if(e.key === "4"){sfx("click"); startCrackerCatch();}
+    if(e.key === "5"){sfx("click"); startPrimeStack();}
   }
   if(["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"," "].includes(e.key)) e.preventDefault();
 });
 window.addEventListener("keyup", e => {
   keys[e.key] = false;
+  if(e.key === "a" || e.key === "A" || e.key === "ArrowLeft"){
+    keys.a = false; keys.A = false; keys.ArrowLeft = false;
+  }
+  if(e.key === "d" || e.key === "D" || e.key === "ArrowRight"){
+    keys.d = false; keys.D = false; keys.ArrowRight = false;
+  }
   if(e.key === "s" || e.key === "S" || e.key === "ArrowDown"){
     fastFallPulse = 0;
     keys.s = false;
     keys.S = false;
     keys.ArrowDown = false;
+  }
+});
+
+window.addEventListener("blur", () => {
+  for(const k in keys) keys[k] = false;
+  clearMovementKeys();
+  fastFallPulse = 0;
+});
+
+document.addEventListener("visibilitychange", () => {
+  if(document.hidden){
+    for(const k in keys) keys[k] = false;
+    clearMovementKeys();
+    fastFallPulse = 0;
   }
 });
 
