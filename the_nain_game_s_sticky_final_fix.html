@@ -1,0 +1,2977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The Nain Game - Nainpur Update</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;overflow:hidden;background:#0b1020;font-family:Arial,Helvetica,sans-serif;color:white;user-select:none}
+#gameWrap{position:relative;width:100vw;height:100vh;display:grid;place-items:center}
+canvas{width:min(100vw,1280px);height:min(100vh,720px);image-rendering:pixelated;border:4px solid rgba(255,255,255,.35);box-shadow:0 25px 80px rgba(0,0,0,.55);background:#75ceff}
+#hud{position:absolute;top:18px;left:50%;transform:translateX(-50%);width:min(1220px,calc(100vw - 24px));display:flex;justify-content:space-between;gap:8px;pointer-events:none;font-weight:900;text-shadow:0 2px 3px rgba(0,0,0,.45)}
+.panel{background:rgba(0,0,0,.38);border:2px solid rgba(255,255,255,.22);border-radius:16px;padding:10px 12px;backdrop-filter:blur(6px)}
+#healthOuter,#powerOuter{width:145px;height:18px;border-radius:99px;border:2px solid white;overflow:hidden;display:inline-block;vertical-align:middle;margin-left:8px;background:rgba(255,255,255,.2)}
+#healthInner{display:block;height:100%;width:100%;background:linear-gradient(90deg,#ff3c3c,#ffbf2f,#47ff76);transition:width .15s linear}
+#powerInner{display:block;height:100%;width:0%;background:linear-gradient(90deg,#b8ffff,#40e6ff,#ffffff);transition:width .1s linear}
+#overlay{position:absolute;inset:0;display:grid;place-items:center;background:rgba(5,7,14,.72)}
+#toast{position:absolute;right:20px;top:86px;max-width:360px;display:flex;flex-direction:column;gap:10px;pointer-events:none;z-index:5}.toastMsg{background:rgba(0,0,0,.62);border:2px solid rgba(255,255,255,.28);border-radius:16px;padding:12px 14px;font-weight:900;box-shadow:0 14px 35px rgba(0,0,0,.35);animation:toastIn .25s ease-out}@keyframes toastIn{from{transform:translateX(24px);opacity:0}to{transform:translateX(0);opacity:1}}
+#box{width:min(780px,calc(100vw - 30px));background:rgba(12,14,23,.93);border:3px solid rgba(255,255,255,.25);border-radius:28px;padding:28px;text-align:center;box-shadow:0 28px 90px rgba(0,0,0,.65)}
+h1{margin:0 0 8px;font-size:clamp(34px,7vw,70px);letter-spacing:-3px}
+p{font-size:18px;line-height:1.45;margin:10px 0;color:#e9f2ff}
+.keys{display:inline-block;padding:3px 8px;border-radius:8px;background:#263149;border:1px solid rgba(255,255,255,.2);font-weight:bold}
+button{margin-top:18px;font-size:22px;font-weight:900;color:#12131a;background:linear-gradient(#fff27c,#ffb638);border:0;border-radius:999px;padding:14px 30px;cursor:pointer;box-shadow:0 7px 0 #ad6813,0 18px 32px rgba(0,0,0,.35)}
+button:active{transform:translateY(5px);box-shadow:0 2px 0 #ad6813,0 10px 20px rgba(0,0,0,.3)}
+#mobileControls{position:absolute;bottom:18px;width:min(1120px,calc(100vw - 22px));display:none;justify-content:space-between;pointer-events:none}
+.touchGroup{display:flex;gap:10px}.touchBtn{width:68px;height:68px;display:grid;place-items:center;border-radius:20px;border:2px solid rgba(255,255,255,.35);background:rgba(0,0,0,.38);font-weight:900;font-size:24px;pointer-events:auto}
+@media(max-width:900px){#hud{top:8px;font-size:11px;gap:4px}.panel{padding:6px 7px;border-radius:11px}#healthOuter,#powerOuter{width:78px;height:13px}#mobileControls{display:flex}}
+</style>
+</head>
+<body>
+<div id="gameWrap">
+<canvas id="game" width="1280" height="720"></canvas>
+<div id="hud">
+  <div class="panel">Level: <span id="levelName">Cracker Run</span></div>
+  <div class="panel"><span id="itemName">Crackers</span>: <span id="items">0</span>/<span id="totalItems">0</span></div>
+  <div class="panel">Score: <span id="score">0</span></div>
+  <div class="panel">Timer: <span id="timer">0.00</span></div>
+  <div class="panel">Health <span id="healthOuter"><span id="healthInner"></span></span></div>
+  <div class="panel">Power <span id="powerOuter"><span id="powerInner"></span></span></div>
+</div>
+<div id="mobileControls">
+  <div class="touchGroup"><div class="touchBtn" data-key="ArrowLeft">◀</div><div class="touchBtn" data-key="ArrowRight">▶</div></div>
+  <div class="touchGroup"><div class="touchBtn" data-key="f">💨</div><div class="touchBtn" data-key="ArrowUp">▲</div></div>
+</div>
+<div id="toast"></div>
+<div id="overlay">
+  <div id="box">
+    <h1>The Nain Game</h1>
+    <p>Expanded version: new Caverns and Sky Temple levels, more powerups, saved stats, achievements, and final mini-game routes.</p>
+    <p>New powerups include shield and magnet. Your best time, achievements, mute setting, and run stats save locally in your browser.</p>
+    <p>Move <span class="keys">A/D</span> or <span class="keys">←/→</span>, jump <span class="keys">W</span>/<span class="keys">↑</span>/<span class="keys">Space</span>, fast-fall <span class="keys">S</span>/<span class="keys">↓</span>, dash <span class="keys">Shift</span>, breath/power <span class="keys">F</span>, restart whole game <span class="keys">R</span>, pause <span class="keys">P</span>, mute <span class="keys">M</span>, help <span class="keys">H</span>.</p>
+    <button id="startBtn">Start Game</button>
+  </div>
+</div>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+const W = canvas.width, H = canvas.height;
+
+const ui = {
+  levelName: document.getElementById("levelName"),
+  itemName: document.getElementById("itemName"),
+  items: document.getElementById("items"),
+  total: document.getElementById("totalItems"),
+  score: document.getElementById("score"),
+  timer: document.getElementById("timer"),
+  hp: document.getElementById("healthInner"),
+  pow: document.getElementById("powerInner"),
+  overlay: document.getElementById("overlay"),
+  box: document.getElementById("box"),
+  toast: document.getElementById("toast")
+};
+
+const keys = {};
+const gravity = 0.85;
+const friction = 0.82;
+
+let running = false;
+let cameraX = 0;
+let particles = [];
+let screenShake = 0;
+let msg = "";
+let msgTimer = 0;
+let currentLevel = 0;
+let totalScore = 0;
+let runStart = 0;
+let finalTime = 0;
+let levelItems = [];
+let levelPowerups = [];
+let activeEnemies = [];
+let worldWidth = 4100;
+let miniMode = null;
+let miniChoicePulse = 0;
+let scooter = null;
+let teaGame = null;
+let nainride = null;
+let nainrideCheckpoint = false;
+let finalMiniRoute = "standard";
+let sTapTimes = [];
+let sFastFallBlocked = 0;
+let fastFallPulse = 0;
+let hamishRun = null;
+let boss = null;
+let fireballs = [];
+let bossCheckpoint = false;
+let endCutscene = null;
+let mouse = {x:0,y:0,down:false,drag:null};
+
+// Generated music and SFX. No files, no libraries.
+let audioCtx = null;
+let masterGain = null;
+let musicGain = null;
+let sfxGain = null;
+let musicClock = 0;
+let musicStep = 0;
+let currentTrack = "";
+let lastTrack = "";
+let paused = false;
+let muted = false;
+let achievements = new Set();
+let runStats = {jumps:0, collects:0, powers:0, deaths:0, bossHits:0, secrets:0};
+let bestTime = Number(localStorage.getItem("nainBestTime") || 0);
+let saveData = loadSaveData();
+
+function loadSaveData(){
+  try {
+    return JSON.parse(localStorage.getItem("nainSaveData") || "{}");
+  } catch(e) {
+    return {};
+  }
+}
+
+function saveGameData(){
+  const data = {
+    bestTime,
+    muted,
+    totalRuns: saveData.totalRuns || 0,
+    totalWins: saveData.totalWins || 0,
+    totalCollects: saveData.totalCollects || 0,
+    totalPowerups: saveData.totalPowerups || 0,
+    totalDeaths: saveData.totalDeaths || 0,
+    totalBossHits: saveData.totalBossHits || 0,
+    achievements: Array.from(achievements),
+    lastRoute: finalMiniRoute || "standard",
+    lastScore: player ? player.score : 0,
+    updatedAt: Date.now()
+  };
+  saveData = data;
+  localStorage.setItem("nainSaveData", JSON.stringify(data));
+}
+
+if(saveData.achievements) achievements = new Set(saveData.achievements);
+if(saveData.muted) muted = true;
+
+function setMuted(v){
+  muted = v;
+  if(masterGain) masterGain.gain.value = muted ? 0 : 0.42;
+  toast(muted ? "Muted" : "Sound on");
+  saveGameData();
+}
+
+function toast(text){
+  if(!ui.toast) return;
+  const el = document.createElement("div");
+  el.className = "toastMsg";
+  el.textContent = text;
+  ui.toast.appendChild(el);
+  setTimeout(()=>{ el.style.opacity="0"; el.style.transform="translateX(24px)"; }, 2400);
+  setTimeout(()=>{ if(el.parentNode) el.parentNode.removeChild(el); }, 3000);
+}
+
+function unlockAchievement(id, text){
+  if(achievements.has(id)) return;
+  achievements.add(id);
+  toast("Achievement: " + text);
+  player.score += 250;
+  saveGameData();
+}
+
+function togglePause(){
+  if(!running || ui.overlay.style.display === "grid") return;
+  paused = !paused;
+  toast(paused ? "Paused — press P to resume" : "Resumed");
+}
+
+function showHelpOverlay(){
+  ui.overlay.style.display = "grid";
+  running = false;
+  ui.box.innerHTML = `
+    <h1>Controls</h1>
+    <p><b>Move:</b> A/D or arrows. <b>Jump:</b> W / Up / Space. <b>Fast-fall:</b> S / Down. <b>Dash:</b> Shift.</p>
+    <p><b>Power:</b> F. <b>Fast-fall:</b> tap S/Down while airborne only. <b>Pause:</b> P. <b>Mute:</b> M. <b>Restart:</b> R.</p>
+    <p><b>Debug:</b> hold T + Y to jump to the mini-game selection.</p>
+    <button id="restartBtn">Back to Game</button>
+  `;
+  document.getElementById("restartBtn").onclick = () => {
+    ui.overlay.style.display = "none";
+    running = true;
+    paused = false;
+  };
+}
+
+const basePlatforms = [
+  {x:0,y:660,w:520,h:80},{x:620,y:610,w:330,h:80},{x:1030,y:555,w:260,h:38},{x:1400,y:610,w:420,h:80},
+  {x:1930,y:535,w:260,h:40},{x:2290,y:465,w:240,h:38},{x:2670,y:570,w:470,h:80},{x:3230,y:500,w:260,h:38},
+  {x:3560,y:640,w:620,h:90},{x:790,y:430,w:160,h:30},{x:1580,y:410,w:170,h:30},{x:2900,y:370,w:170,h:30}
+];
+
+const levels = [
+  {
+    name:"Cracker Run", theme:"grass", itemName:"Crackers", goalName:"PEN DEVICE", width:4100,
+    start:{x:70,y:500}, goal:{x:3940,y:555,w:70,h:90,type:"pen"},
+    platforms:basePlatforms,
+    hazards:[{x:535,y:640,w:70,h:35},{x:1320,y:640,w:85,h:35},{x:1840,y:640,w:80,h:35},{x:2550,y:640,w:95,h:35},{x:3160,y:640,w:80,h:35}],
+    items:[[240,590],[720,540],[855,365],[1125,485],[1510,540],[1660,345],[2020,465],[2375,395],[2830,500],[2985,305],[3330,430],[3730,570]],
+    powerups:[],
+    enemies:[
+      {name:"Louie",type:"louie",x:920,y:500,w:48,h:66,speed:.43,maxSpeed:4.25,color:"#77b7ff",hair:"#ff7a1f"},
+      {name:"Suvaha",type:"suvaha",x:2290,y:380,w:50,h:66,speed:.50,maxSpeed:4.7,color:"#87d36f",hair:"#151515"}
+    ],
+    signs:[[120,610,"Nain's quest begins"],[1500,560,"Dash with SHIFT"],[2790,520,"Enemies get faster"],[3850,590,"Final device"]]
+  },
+  {
+    name:"The Beach", theme:"beach", itemName:"Calculators", goalName:"PHONE", width:4100,
+    start:{x:70,y:500}, goal:{x:3915,y:545,w:95,h:100,type:"phone"},
+    platforms:[
+      {x:0,y:660,w:560,h:80},{x:640,y:590,w:330,h:70},{x:1080,y:520,w:260,h:38},{x:1420,y:615,w:430,h:80},
+      {x:1980,y:545,w:280,h:38},{x:2380,y:455,w:260,h:38},{x:2740,y:590,w:470,h:80},{x:3280,y:510,w:260,h:38},
+      {x:3570,y:640,w:610,h:90},{x:810,y:405,w:180,h:30},{x:1610,y:385,w:190,h:30},{x:2920,y:350,w:190,h:30}
+    ],
+    hazards:[{x:570,y:640,w:70,h:35},{x:1320,y:640,w:85,h:35},{x:1880,y:640,w:90,h:35},{x:2635,y:640,w:95,h:35},{x:3215,y:640,w:80,h:35}],
+    items:[[220,585],[750,520],[900,340],[1170,455],[1530,545],[1700,320],[2070,480],[2480,385],[2860,520],[3030,290],[3370,440],[3735,570]],
+    powerups:[{x:520,y:585,type:"mint"},{x:1900,y:480,type:"mint"},{x:3180,y:440,type:"mint"}],
+    enemies:[
+      {name:"Louie",type:"louie",x:920,y:500,w:48,h:66,speed:.43,maxSpeed:4.25,color:"#77b7ff",hair:"#ff7a1f"},
+      {name:"Suvaha",type:"suvaha",x:2290,y:380,w:50,h:66,speed:.50,maxSpeed:4.7,color:"#87d36f",hair:"#151515"}
+    ],
+    signs:[[130,610,"Broken hammock zone"],[720,540,"Grab calculators"],[1890,500,"Fisherman's Friends!"],[3840,590,"Phone finish"]]
+  },
+  {
+    name:"Nainpur", theme:"india", itemName:"Tea", goalName:"UJJAIN", width:6900,
+    start:{x:70,y:500}, goal:{x:6600,y:515,w:230,h:125,type:"city"},
+    platforms:[
+      {x:0,y:660,w:560,h:80},{x:680,y:610,w:300,h:70},{x:1120,y:540,w:250,h:38},{x:1510,y:600,w:430,h:80},
+      {x:2080,y:520,w:260,h:38},{x:2480,y:450,w:240,h:38},{x:2880,y:590,w:470,h:80},{x:3420,y:520,w:270,h:38},
+      {x:3820,y:455,w:250,h:38},{x:4260,y:610,w:420,h:80},{x:4820,y:535,w:260,h:38},{x:5220,y:460,w:240,h:38},
+      {x:5620,y:590,w:470,h:80},{x:6180,y:525,w:250,h:38},{x:6490,y:640,w:520,h:90},
+      {x:850,y:420,w:170,h:30},{x:1730,y:385,w:190,h:30},{x:3150,y:370,w:180,h:30},{x:4550,y:390,w:190,h:30},{x:5920,y:390,w:190,h:30}
+    ],
+    hazards:[
+      {x:590,y:640,w:70,h:35},{x:1400,y:640,w:90,h:35},{x:1985,y:640,w:90,h:35},{x:2760,y:640,w:95,h:35},
+      {x:3720,y:640,w:80,h:35},{x:4145,y:640,w:95,h:35},{x:4735,y:640,w:90,h:35},{x:5515,y:640,w:95,h:35},{x:6100,y:640,w:70,h:35}
+    ],
+    bouncers:[
+      {x:1345,y:500,w:72,h:18},
+      {x:2715,y:410,w:72,h:18},
+      {x:4090,y:575,w:72,h:18},
+      {x:5455,y:420,w:72,h:18}
+    ],
+    items:[
+      [220,585],[760,540],[930,355],[1215,470],[1640,530],[1815,320],[2185,450],[2585,380],
+      [3010,520],[3240,305],[3525,450],[3925,385],[4380,540],[4625,325],[4910,465],[5320,390],
+      [5740,520],[6015,325],[6260,455],[6675,570]
+    ],
+    powerups:[{x:1040,y:475,type:"coffee"},{x:2790,y:520,type:"coffee"},{x:4440,y:545,type:"coffee"},{x:5860,y:520,type:"coffee"}],
+    enemies:[
+      {name:"Louie",type:"louie",x:1700,y:530,w:48,h:66,speed:.43,maxSpeed:4.15,color:"#77b7ff",hair:"#ff7a1f"},
+      {name:"Henry",type:"henry",x:4700,y:465,w:50,h:66,speed:.46,maxSpeed:4.35,color:"#bf8f62",hair:"#6b3b18"}
+    ],
+    signs:[[160,610,"Welcome to Nainpur"],[880,380,"Tea stalls ahead"],[2440,410,"Coffee breath blasts enemies"],[4230,575,"Long road to Ujjain"],[6650,500,"Ujjain city!"]]
+  },
+  {
+    name:"Nain's House", theme:"house2", itemName:"Prime", goalName:"TRAMPOLINE", width:6400,
+    start:{x:70,y:500}, goal:{x:6110,y:585,w:190,h:55,type:"trampoline"},
+    platforms:[
+      {x:0,y:660,w:560,h:80},{x:710,y:610,w:270,h:70},{x:1120,y:545,w:250,h:38},{x:1510,y:475,w:230,h:38},
+      {x:1880,y:610,w:390,h:80},{x:2410,y:535,w:250,h:38},{x:2790,y:455,w:230,h:38},{x:3180,y:590,w:430,h:80},
+      {x:3710,y:520,w:270,h:38},{x:4140,y:450,w:230,h:38},{x:4540,y:610,w:410,h:80},{x:5070,y:535,w:260,h:38},
+      {x:5460,y:465,w:240,h:38},{x:5830,y:640,w:650,h:90},
+      {x:860,y:420,w:160,h:30},{x:1660,y:375,w:180,h:30},{x:3000,y:360,w:170,h:30},{x:4380,y:380,w:180,h:30},{x:5660,y:385,w:180,h:30}
+    ],
+    hazards:[
+      {x:600,y:640,w:80,h:35},{x:1020,y:640,w:85,h:35},{x:1410,y:640,w:70,h:35},{x:1810,y:640,w:70,h:35},{x:2310,y:640,w:90,h:35},
+      {x:3080,y:640,w:85,h:35},{x:3560,y:640,w:80,h:35},{x:4035,y:640,w:90,h:35},{x:4960,y:640,w:90,h:35},{x:5750,y:640,w:70,h:35}
+    ],
+    bouncers:[
+      {x:1330,y:505,w:72,h:18},
+      {x:2650,y:490,w:72,h:18},
+      {x:3985,y:485,w:72,h:18},
+      {x:5320,y:500,w:72,h:18}
+    ],
+    items:[
+      [230,585],[820,540],[940,355],[1210,475],[1605,405],[1980,540],[2520,465],[2865,385],
+      [3270,520],[3070,300],[3815,450],[4260,385],[4650,540],[4475,315],[5160,465],[5570,395],
+      [5900,570],[6175,570]
+    ],
+    powerups:[{x:1010,y:575,type:"invis"},{x:3370,y:520,type:"invis"},{x:5010,y:580,type:"invis"}],
+    enemies:[
+      {name:"Horace",type:"horaceDog",x:980,y:520,w:70,h:48,speed:.94,maxSpeed:9.1,color:"#8b5a2b",hair:"#4a2813",damage:9}
+    ],
+    signs:[[165,610,"Nain's House"],[920,380,"Prime bottles"],[2380,500,"Invis potion hides you"],[4310,415,"Horace is fast"],[6160,555,"Trampoline exit!"]]
+  },
+  {
+    name:"Cracker Caverns", theme:"cavern", itemName:"Crystal Crackers", goalName:"MINE ELEVATOR", width:5600,
+    start:{x:70,y:500}, goal:{x:5300,y:555,w:110,h:95,type:"elevator"},
+    platforms:[
+      {x:0,y:660,w:540,h:80},{x:680,y:590,w:260,h:42},{x:1080,y:520,w:240,h:38},{x:1450,y:450,w:230,h:38},
+      {x:1810,y:610,w:390,h:70},{x:2340,y:540,w:250,h:38},{x:2750,y:470,w:230,h:38},{x:3150,y:590,w:420,h:70},
+      {x:3700,y:520,w:250,h:38},{x:4100,y:455,w:240,h:38},{x:4520,y:610,w:420,h:70},{x:5040,y:640,w:620,h:90},
+      {x:850,y:395,w:170,h:30},{x:1980,y:385,w:185,h:30},{x:3340,y:360,w:190,h:30},{x:4740,y:390,w:190,h:30}
+    ],
+    hazards:[
+      {x:560,y:640,w:90,h:35},{x:980,y:640,w:80,h:35},{x:1360,y:640,w:90,h:35},{x:2240,y:640,w:90,h:35},
+      {x:2650,y:640,w:90,h:35},{x:3590,y:640,w:90,h:35},{x:4000,y:640,w:90,h:35},{x:4960,y:640,w:70,h:35}
+    ],
+    bouncers:[{x:1220,y:480,w:78,h:18},{x:2900,y:430,w:78,h:18},{x:4380,y:570,w:78,h:18}],
+    items:[[210,590],[760,520],[910,330],[1160,455],[1540,385],[1910,540],[2050,315],[2440,470],[2850,400],[3240,520],[3430,295],[3820,445],[4200,385],[4640,540],[4850,325],[5220,570]],
+    powerups:[{x:1020,y:455,type:"shield"},{x:3000,y:520,type:"magnet"},{x:4700,y:545,type:"shield"}],
+    enemies:[
+      {name:"Cave Louie",type:"louie",x:1500,y:380,w:48,h:66,speed:.50,maxSpeed:4.7,color:"#6d9cff",hair:"#ff7a1f"},
+      {name:"Henry",type:"henry",x:3380,y:500,w:50,h:66,speed:.52,maxSpeed:4.9,color:"#bf8f62",hair:"#6b3b18"}
+    ],
+    signs:[[160,610,"Cracker Caverns"],[1100,480,"Shield blocks one hit"],[2880,500,"Magnet pulls pickups"],[5320,530,"Mine elevator"]]
+  },
+  {
+    name:"Sky Cracker Temple", theme:"sky", itemName:"Golden Crackers", goalName:"SKY PORTAL", width:6100,
+    start:{x:70,y:500}, goal:{x:5840,y:505,w:130,h:130,type:"portal"},
+    platforms:[
+      {x:0,y:660,w:470,h:80},{x:630,y:585,w:240,h:38},{x:1030,y:500,w:220,h:36},{x:1400,y:420,w:210,h:36},
+      {x:1760,y:585,w:310,h:45},{x:2220,y:505,w:230,h:36},{x:2600,y:425,w:220,h:36},{x:2980,y:590,w:360,h:45},
+      {x:3500,y:515,w:230,h:36},{x:3900,y:435,w:220,h:36},{x:4300,y:585,w:330,h:45},{x:4800,y:510,w:230,h:36},
+      {x:5200,y:430,w:230,h:36},{x:5620,y:640,w:560,h:90}
+    ],
+    hazards:[{x:500,y:640,w:100,h:35},{x:1280,y:640,w:100,h:35},{x:2100,y:640,w:95,h:35},{x:3380,y:640,w:95,h:35},{x:4660,y:640,w:95,h:35},{x:5520,y:640,w:80,h:35}],
+    bouncers:[{x:890,y:545,w:78,h:18},{x:1640,y:540,w:78,h:18},{x:2520,y:385,w:78,h:18},{x:3760,y:475,w:78,h:18},{x:5060,y:470,w:78,h:18}],
+    items:[[190,590],[700,515],[1110,430],[1480,350],[1870,515],[2310,435],[2680,355],[3070,520],[3600,445],[3980,365],[4400,515],[4890,440],[5290,360],[5710,570]],
+    powerups:[{x:820,y:520,type:"magnet"},{x:2400,y:455,type:"shield"},{x:4040,y:390,type:"magnet"},{x:5400,y:380,type:"shield"}],
+    enemies:[
+      {name:"Sky Henry",type:"henry",x:1780,y:520,w:50,h:66,speed:.54,maxSpeed:5.1,color:"#bf8f62",hair:"#6b3b18"},
+      {name:"Louie",type:"louie",x:4320,y:515,w:48,h:66,speed:.55,maxSpeed:5.2,color:"#77b7ff",hair:"#ff7a1f"}
+    ],
+    signs:[[150,610,"Sky Cracker Temple"],[880,525,"Bounce chains"],[2380,430,"Magnet helps"],[5820,485,"Sky portal"]]
+  }
+];
+
+const player = {
+  x:70,y:500,w:44,h:62,
+  vx:0,vy:0,speed:.92,maxSpeed:8,jump:18,
+  grounded:false,face:1,health:100,items:0,score:0,
+  invincible:0,dashCooldown:0,dashTimer:0,
+  mint:0,coffee:0,invis:0,shield:0,magnet:0,breathCooldown:0,jumpHeld:false
+};
+
+function L(){return levels[currentLevel]}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function rects(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
+function fastFallAllowed(){
+  return sFastFallBlocked <= 0 && fastFallPulse > 0 && playerIsActuallyAirborne();
+}
+
+function playerIsActuallyAirborne(){
+  const foot = {x:player.x+5,y:player.y+player.h+1,w:player.w-10,h:8};
+  if(miniMode === "boss" && boss){
+    for(const p of boss.platforms) if(rects(foot,p)) return false;
+    return true;
+  }
+  if(!miniMode && currentLevel >= 0){
+    for(const p of L().platforms) if(rects(foot,p)) return false;
+    return true;
+  }
+  if(miniMode === "hamishRun" && hamishRun){
+    for(const p of hamishRun.platforms) if(rects(foot,p)) return false;
+    return true;
+  }
+  return !player.grounded;
+}
+
+
+function resetGame(){
+  initAudio();
+  sfx("click");
+  currentLevel = 0;
+  miniMode = null;
+  paused = false;
+  achievements = new Set();
+  runStats = {jumps:0, collects:0, powers:0, deaths:0, bossHits:0, secrets:0};
+  finalMiniRoute = "standard";
+  nainrideCheckpoint = false;
+  sTapTimes = [];
+  sFastFallBlocked = 0;
+  fastFallPulse = 0;
+  bossCheckpoint = false;
+  totalScore = 0;
+  runStart = performance.now();
+  finalTime = 0;
+  accumulator = 0;
+  lastFrameTime = performance.now();
+  loadLevel(0,true);
+  running = true;
+  ui.overlay.style.display = "none";
+}
+
+function loadLevel(n, fullReset=false){
+  currentLevel = n;
+  miniMode = null;
+  worldWidth = L().width;
+
+  levelItems = L().items.map(([x,y]) => ({x,y,got:false}));
+  levelPowerups = (L().powerups || []).map(p => ({...p,got:false}));
+  activeEnemies = L().enemies.map(e => ({...e,vx:0,vy:0,grounded:false,stun:0}));
+
+  player.x = L().start.x; player.y = L().start.y;
+  player.vx = 0; player.vy = 0; player.items = 0;
+  player.invincible = 80; player.dashCooldown = 0; player.dashTimer = 0;
+  player.mint = 0; player.coffee = 0; player.invis = 0; player.shield = 0; player.magnet = 0; player.breathCooldown = 0; player.jumpHeld = false;
+
+  if(fullReset){
+    player.health = 100;
+    player.score = 0;
+  } else {
+    player.health = Math.min(100, player.health + 35);
+    player.score = totalScore;
+  }
+
+  cameraX = 0;
+  accumulator = 0;
+  lastFrameTime = performance.now();
+  particles = [];
+  screenShake = 0;
+
+  const levelNumber = n + 1;
+  msg = `Level ${levelNumber}: ${L().name} — collect ${L().itemName} and reach ${L().goalName}.`;
+  msgTimer = 170;
+  updateHud();
+}
+
+function collide(obj){
+  obj.grounded = false;
+  for(const p of L().platforms){
+    if(rects(obj,p)){
+      const prevBottom = obj.y+obj.h-obj.vy;
+      const prevTop = obj.y-obj.vy;
+      const prevRight = obj.x+obj.w-obj.vx;
+      const prevLeft = obj.x-obj.vx;
+
+      if(prevBottom <= p.y && obj.vy >= 0){
+        obj.y = p.y-obj.h; obj.vy = 0; obj.grounded = true;
+      } else if(prevTop >= p.y+p.h && obj.vy < 0){
+        obj.y = p.y+p.h; obj.vy = 0;
+      } else if(prevRight <= p.x && obj.vx > 0){
+        obj.x = p.x-obj.w; obj.vx = 0;
+      } else if(prevLeft >= p.x+p.w && obj.vx < 0){
+        obj.x = p.x+p.w; obj.vx = 0;
+      }
+    }
+  }
+}
+
+function part(x,y,n,kind){
+  for(let i=0;i<n;i++){
+    const speed = kind==="hit" ? 13 : kind==="breath" || kind==="coffee" ? 17 : 7;
+    particles.push({
+      x,y,
+      vx:(Math.random()-.5)*speed,
+      vy:-Math.random()*(kind==="hit"?8:5),
+      life:35+Math.random()*25,
+      size:3+Math.random()*7,
+      kind
+    });
+  }
+}
+
+function initAudio(){
+  if(audioCtx) {
+    if(audioCtx.state === "suspended") audioCtx.resume();
+    return;
+  }
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if(!AC) return;
+  audioCtx = new AC();
+  masterGain = audioCtx.createGain();
+  musicGain = audioCtx.createGain();
+  sfxGain = audioCtx.createGain();
+
+  masterGain.gain.value = muted ? 0 : 0.42;
+  musicGain.gain.value = 0.18;
+  sfxGain.gain.value = 0.55;
+
+  musicGain.connect(masterGain);
+  sfxGain.connect(masterGain);
+  masterGain.connect(audioCtx.destination);
+}
+
+function tone(freq, dur=0.12, type="square", vol=0.28, slide=0){
+  if(!audioCtx) return;
+  const now = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, now);
+  if(slide) osc.frequency.exponentialRampToValueAtTime(Math.max(20, freq+slide), now+dur);
+  g.gain.setValueAtTime(0.0001, now);
+  g.gain.exponentialRampToValueAtTime(vol, now+0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, now+dur);
+  osc.connect(g); g.connect(sfxGain);
+  osc.start(now); osc.stop(now+dur+0.03);
+}
+
+function noise(dur=0.12, vol=0.25, filter=900){
+  if(!audioCtx) return;
+  const now = audioCtx.currentTime;
+  const buffer = audioCtx.createBuffer(1, Math.max(1, audioCtx.sampleRate*dur), audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for(let i=0;i<data.length;i++) data[i] = (Math.random()*2-1) * (1-i/data.length);
+  const src = audioCtx.createBufferSource();
+  const f = audioCtx.createBiquadFilter();
+  const g = audioCtx.createGain();
+  f.type = "lowpass"; f.frequency.value = filter;
+  g.gain.setValueAtTime(vol, now);
+  g.gain.exponentialRampToValueAtTime(0.0001, now+dur);
+  src.buffer = buffer;
+  src.connect(f); f.connect(g); g.connect(sfxGain);
+  src.start(now); src.stop(now+dur+0.02);
+}
+
+function sfx(name){
+  if(!audioCtx) return;
+  if(name==="jump"){tone(360,.08,"square",.18,180)}
+  else if(name==="fastfall"){tone(150,.08,"sawtooth",.12,-50); noise(.06,.08,500)}
+  else if(name==="dash"){tone(220,.10,"sawtooth",.18,360); noise(.08,.12,1800)}
+  else if(name==="collect"){tone(660,.07,"triangle",.16); tone(990,.09,"triangle",.13)}
+  else if(name==="power"){tone(440,.08,"triangle",.14); tone(660,.08,"triangle",.14); tone(880,.13,"triangle",.16)}
+  else if(name==="hurt"){tone(190,.18,"sawtooth",.23,-90); noise(.12,.22,650)}
+  else if(name==="bounce"){tone(310,.09,"square",.20,420); tone(620,.08,"triangle",.15)}
+  else if(name==="breath"){noise(.18,.22,1200); tone(140,.12,"sine",.09,-40)}
+  else if(name==="fire"){noise(.16,.20,700); tone(90,.10,"sawtooth",.10,-30)}
+  else if(name==="bossHit"){tone(120,.16,"sawtooth",.28,-50); tone(520,.09,"square",.18); noise(.12,.22,900)}
+  else if(name==="win"){tone(523,.10,"triangle",.16); tone(659,.10,"triangle",.16); tone(784,.18,"triangle",.18)}
+  else if(name==="click"){tone(520,.04,"square",.08)}
+}
+
+function trackName(){
+  if(miniMode==="boss") return "boss";
+  if(miniMode==="secretIntro" || miniMode==="hamishRun") return "boss";
+  if(miniMode==="crackerHeaven") return "cutscene";
+  if(miniMode==="endingCutscene") return "cutscene";
+  if(miniMode==="scooter") return "scooter";
+  if(miniMode==="nainride") return "scooter";
+  if(miniMode==="tea") return "tea";
+  if(miniMode==="choice") return "choice";
+  if(currentLevel===0) return "grass";
+  if(currentLevel===1) return "beach";
+  if(currentLevel===2) return "nainpur";
+  if(currentLevel===3) return "house";
+  return "grass";
+}
+
+function musicNote(freq, start, dur, type, vol){
+  if(!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, start);
+  g.gain.setValueAtTime(0.0001,start);
+  g.gain.exponentialRampToValueAtTime(vol,start+0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001,start+dur);
+  osc.connect(g); g.connect(musicGain);
+  osc.start(start); osc.stop(start+dur+0.03);
+}
+
+function updateMusic(){
+  if(!audioCtx || !running) return;
+  const tr = trackName();
+  if(tr !== lastTrack){
+    lastTrack = tr;
+    musicClock = 0;
+    musicStep = 0;
+  }
+
+  musicClock--;
+  if(musicClock > 0) return;
+
+  const now = audioCtx.currentTime;
+  const scales = {
+    grass:[261.63,329.63,392.00,523.25],
+    beach:[293.66,369.99,440.00,587.33],
+    nainpur:[246.94,329.63,392.00,493.88,659.25],
+    house:[220.00,277.18,329.63,440.00],
+    choice:[261.63,329.63,392.00,493.88],
+    scooter:[196.00,246.94,293.66,392.00],
+    tea:[329.63,392.00,493.88,659.25],
+    boss:[110.00,146.83,164.81,220.00,293.66],
+    cutscene:[82.41,110.00,123.47,164.81]
+  };
+  const scale = scales[tr] || scales.grass;
+
+  if(tr==="boss"){
+    const bass = scale[musicStep%scale.length];
+    musicNote(bass,now,.18,"sawtooth",.075);
+    musicNote(bass*2,now+.05,.10,"square",.04);
+    if(musicStep%4===0) noise(.07,.10,350);
+    musicClock = 10;
+  } else if(tr==="cutscene"){
+    musicNote(scale[musicStep%scale.length],now,.45,"sine",.055);
+    if(musicStep%3===0) noise(.20,.045,500);
+    musicClock = 30;
+  } else if(tr==="scooter"){
+    musicNote(scale[musicStep%scale.length],now,.09,"square",.055);
+    if(musicStep%2===0) musicNote(scale[0]/2,now,.08,"sawtooth",.04);
+    musicClock = 9;
+  } else if(tr==="tea"){
+    musicNote(scale[musicStep%scale.length],now,.20,"triangle",.05);
+    musicClock = 20;
+  } else {
+    musicNote(scale[musicStep%scale.length],now,.14,"triangle",.05);
+    if(musicStep%4===0) musicNote(scale[0]/2,now,.18,"sine",.045);
+    musicClock = tr==="nainpur" ? 13 : 15;
+  }
+  musicStep++;
+}
+
+function hurt(amount, sourceX){
+  if(player.invincible > 0) return;
+  if(player.shield > 0){
+    player.shield = 0;
+    player.invincible = 45;
+    screenShake = 8;
+    part(player.x+22,player.y+31,26,"shield");
+    sfx("power");
+    msg = "Shield blocked the hit!";
+    msgTimer = 70;
+    updateHud();
+    return;
+  }
+  player.health -= amount;
+  player.invincible = 80;
+  screenShake = 16;
+  player.vx = sourceX < player.x ? 13 : -13;
+  player.vy = -12;
+  part(player.x+22,player.y+31,22,"hit");
+  sfx("hurt");
+  msg = amount>=25 ? "Ouch! Watch the hazards!" : "Caught! Keep moving!";
+  msgTimer = 90;
+  updateHud();
+  if(player.health <= 0){
+    runStats.deaths++;
+    player.health = 0;
+    if(miniMode === "boss" || bossCheckpoint){ restartFinalBoss(); }
+    else end(false);
+  }
+}
+
+function end(win){
+  running = false;
+  paused = false;
+  finalTime = (performance.now()-runStart)/1000;
+  let bestLine = "";
+  if(win){
+    if(!bestTime || finalTime < bestTime){
+      bestTime = finalTime;
+      localStorage.setItem("nainBestTime", String(bestTime));
+      bestLine = "<p><b>New Best Time!</b></p>";
+      unlockAchievement("best", "New best speedrun time");
+    } else {
+      bestLine = `<p><b>Best Time:</b> ${bestTime.toFixed(2)}s</p>`;
+    }
+  }
+  ui.overlay.style.display = "grid";
+  sfx(win ? "win" : "hurt");
+  ui.box.innerHTML = win ? `
+    <h1>You Win!</h1>
+    <p>Nain cleared the full game route and reached the ending.</p>
+    <p><b>Final Score:</b> ${player.score}</p>
+    <p><b>Speedrun Time:</b> ${finalTime.toFixed(2)}s</p>
+    ${bestLine}
+    <p><b>Stats:</b> ${runStats.collects} collects, ${runStats.powers} powerups, ${runStats.bossHits} boss hits, ${achievements.size} achievements.</p>
+    <button id="restartBtn">Play Again</button>
+  ` : `
+    <h1>Game Over</h1>
+    <p>Nain got wrecked. Use dash, powerups, checkpoints, and fast-fall carefully.</p>
+    <p><b>Score:</b> ${player.score}</p>
+    <p><b>Time:</b> ${finalTime.toFixed(2)}s</p>
+    <p><b>Best Time:</b> ${bestTime ? bestTime.toFixed(2)+"s" : "None yet"}</p>
+    <button id="restartBtn">Retry</button>
+  `;
+  saveData.totalRuns = (saveData.totalRuns || 0) + 1;
+  if(win) saveData.totalWins = (saveData.totalWins || 0) + 1;
+  saveData.totalCollects = (saveData.totalCollects || 0) + runStats.collects;
+  saveData.totalPowerups = (saveData.totalPowerups || 0) + runStats.powers;
+  saveData.totalDeaths = (saveData.totalDeaths || 0) + runStats.deaths;
+  saveData.totalBossHits = (saveData.totalBossHits || 0) + runStats.bossHits;
+  saveGameData();
+  document.getElementById("restartBtn").onclick = resetGame;
+}
+
+function updatePlayer(){
+  const left = keys.a || keys.ArrowLeft;
+  const right = keys.d || keys.ArrowRight;
+  const jump = keys.w || keys.ArrowUp || keys[" "];
+  const down = keys.s || keys.S || keys.ArrowDown;
+
+  if(left){player.vx -= player.speed; player.face = -1}
+  if(right){player.vx += player.speed; player.face = 1}
+  if(!left && !right && player.grounded) player.vx *= friction;
+
+  if(jump && player.grounded && !player.jumpHeld){
+    player.vy = -player.jump;
+    player.grounded = false;
+    player.jumpHeld = true;
+    part(player.x+22,player.y+62,8,"dust");
+    sfx("jump");
+    runStats.jumps++;
+    if(runStats.jumps===20) unlockAchievement("hopper","20 jumps");
+  }
+  if(!jump) player.jumpHeld = false;
+
+  if((keys.Shift || keys.shift) && player.dashCooldown <= 0){
+    player.dashTimer = 10;
+    player.dashCooldown = 58;
+    player.vx = player.face * 19;
+    part(player.x+22,player.y+31,14,"dash");
+    sfx("dash");
+  }
+
+  if((keys.f || keys.F) && player.breathCooldown <= 0){
+    if(player.mint > 0){
+      mintBreath();
+      sfx("breath");
+      player.breathCooldown = 10;
+    } else if(player.coffee > 0){
+      coffeeBreath();
+      sfx("breath");
+      player.breathCooldown = 14;
+    }
+  }
+
+  if(player.mint > 0) player.mint--;
+  if(player.coffee > 0) player.coffee--;
+  if(player.invis > 0) player.invis--;
+  if(player.magnet > 0) player.magnet--;
+  if(player.breathCooldown > 0) player.breathCooldown--;
+
+  if(player.dashTimer > 0){player.dashTimer--; player.vy *= .82}
+  player.dashCooldown--;
+  player.invincible--;
+
+  player.vx = clamp(player.vx, -player.maxSpeed, player.maxSpeed);
+  if(player.dashTimer > 0) player.vx = player.face * 19;
+
+  player.vy += gravity;
+  if(fastFallAllowed()){
+    player.vy = Math.min(player.vy + 2.4, 24);
+    fastFallPulse = Math.max(0, fastFallPulse - 1);
+    if(!player.fastFallSound){sfx("fastfall"); player.fastFallSound=true;}
+  } else {
+    player.fastFallSound=false;
+  }
+  player.x += player.vx; collide(player);
+  player.y += player.vy; collide(player);
+  updateBouncers();
+
+  player.x = clamp(player.x,0,worldWidth-player.w);
+
+  if(player.y > H+200){
+    player.x = Math.max(60, player.x-450);
+    player.y = 120;
+    player.vy = 0;
+    hurt(30, player.x+100);
+  }
+
+  for(const s of L().hazards){
+    if(rects(player,s)) hurt(25, s.x+s.w/2);
+  }
+}
+
+function updateBouncers(){
+  if(!L().bouncers) return;
+  for(const b of L().bouncers){
+    const pad = {x:b.x,y:b.y,w:b.w,h:b.h};
+    const playerFallingOntoPad = player.vy >= 0 && player.x+player.w > b.x && player.x < b.x+b.w && player.y+player.h > b.y && player.y+player.h < b.y+b.h+22;
+    if(playerFallingOntoPad){
+      player.y = b.y - player.h;
+      player.vy = -24;
+      player.grounded = false;
+      player.score += 20;
+      screenShake = Math.max(screenShake, 4);
+      part(b.x+b.w/2,b.y,22,"bounce");
+      sfx("bounce");
+      msg = "Bounce platform!";
+      msgTimer = 38;
+    }
+  }
+}
+
+function mintBreath(){
+  const bx = player.face===1 ? player.x+player.w : player.x-210;
+  const breath = {x:bx,y:player.y+8,w:210,h:52};
+  part(player.x+player.w/2+player.face*45,player.y+28,18,"breath");
+
+  for(const e of activeEnemies){
+    if(rects(breath,e) && e.stun <= 0){
+      e.stun = 110;
+      e.vx = player.face * 16;
+      e.vy = -12;
+      player.score += 400;
+      part(e.x+e.w/2,e.y+20,26,"breath");
+      msg = `Mint breath froze ${e.name}!`;
+      msgTimer = 70;
+    }
+  }
+}
+
+function coffeeBreath(){
+  const bx = player.face===1 ? player.x+player.w : player.x-310;
+  const breath = {x:bx,y:player.y+0,w:310,h:70};
+  part(player.x+player.w/2+player.face*50,player.y+28,24,"coffee");
+
+  for(const e of activeEnemies){
+    if(rects(breath,e)){
+      e.stun = Math.max(e.stun, 55);
+      e.vx = player.face * 26;
+      e.vy = -11;
+      player.score += 200;
+      part(e.x+e.w/2,e.y+22,26,"coffee");
+      msg = `Stinky coffee breath blasted ${e.name} back!`;
+      msgTimer = 65;
+    }
+  }
+}
+
+function updateEnemies(){
+  const diff = 1 + player.items*.035 + currentLevel*.08;
+
+  for(const e of activeEnemies){
+    if(e.stun > 0) e.stun--;
+
+    const dx = player.x - e.x;
+    const hiddenFromHorace = e.type === "horaceDog" && player.invis > 0;
+    const close = !hiddenFromHorace && (Math.abs(dx) < (currentLevel===2 ? 1050 : currentLevel===3 ? 1400 : 900) || player.items > 4);
+
+    if(close && e.stun <= 0){
+      e.vx += Math.sign(dx) * e.speed * diff;
+      if(Math.abs(dx) < 125 && e.grounded){
+        e.vy = -13;
+        e.grounded = false;
+      }
+    } else {
+      e.vx += Math.sin(Date.now()*.001 + e.x)*.08;
+      if(hiddenFromHorace) e.vx *= .96;
+    }
+
+    const max = e.maxSpeed * diff;
+    e.vx = clamp(e.vx,-max,max);
+    e.vy += gravity;
+
+    e.x += e.vx; collide(e);
+    e.y += e.vy; collide(e);
+
+    e.vx *= e.grounded ? .92 : .985;
+    e.x = clamp(e.x,0,worldWidth-e.w);
+
+    if(e.y > H+250){
+      e.y = 100;
+      e.x = clamp(player.x + 500, 300, worldWidth-300);
+      e.vx = 0; e.vy = 0;
+    }
+
+    if(rects(player,e)){
+      if(player.vy > 2 && player.y+player.h-e.y < 28){
+        e.stun = 85;
+        e.vy = -10;
+        e.vx = player.face * 8;
+        player.vy = -13;
+        player.score += 250;
+        part(e.x+e.w/2,e.y+18,22,"hit");
+        msg = `${e.name} bounced!`;
+        msgTimer = 70;
+      } else {
+        hurt(e.damage || 15,e.x);
+      }
+    }
+  }
+}
+
+function updateCollect(){
+  if(player.magnet > 0){
+    for(const c of levelItems){
+      if(c.got) continue;
+      const dx = (player.x+player.w/2) - c.x;
+      const dy = (player.y+player.h/2) - c.y;
+      const d = Math.hypot(dx,dy);
+      if(d < 180 && d > 4){
+        c.x += dx / d * 4.2;
+        c.y += dy / d * 4.2;
+      }
+    }
+  }
+  for(const c of levelItems){
+    if(!c.got && rects(player,{x:c.x-17,y:c.y-17,w:34,h:34})){
+      c.got = true;
+      player.items++;
+      runStats.collects++;
+      if(runStats.collects===1) unlockAchievement("first_collect","First pickup");
+      if(runStats.collects===25) unlockAchievement("collector","25 pickups");
+      player.score += 500;
+      player.health = Math.min(100, player.health+5);
+      part(c.x,c.y,20,currentLevel===0?"cracker":currentLevel===1?"calc":currentLevel===2?"tea":"collect");
+      sfx("collect");
+      const single = currentLevel===0 ? "Cracker packet" : currentLevel===1 ? "Calculator" : currentLevel===2 ? "Tea" : "Prime bottle";
+      msg = `${single} collected! ${player.items}/${levelItems.length}`;
+      msgTimer = 85;
+    }
+  }
+
+  for(const p of levelPowerups){
+    if(!p.got && rects(player,{x:p.x-20,y:p.y-20,w:40,h:40})){
+      p.got = true;
+      runStats.powers++;
+      if(runStats.powers===1) unlockAchievement("first_power","First powerup");
+      player.score += 300;
+
+      if(p.type === "mint"){
+        player.mint = 15*60;
+        part(p.x,p.y,30,"breath");
+        sfx("power");
+        msg = "Fisherman's Friends! Press F for mint cold breath.";
+      } else if(p.type === "coffee"){
+        player.coffee = 15*60;
+        part(p.x,p.y,35,"coffee");
+        sfx("power");
+        msg = "Coffee! Press F for stinky coffee breath knockback.";
+      } else if(p.type === "invis"){
+        player.invis = 3*60;
+        part(p.x,p.y,35,"invis");
+        sfx("power");
+        msg = "Invis potion! Horace cannot see you for 3 seconds.";
+      } else if(p.type === "shield"){
+        player.shield = 1;
+        part(p.x,p.y,35,"shield");
+        sfx("power");
+        msg = "Shield bubble! Blocks the next hit.";
+      } else if(p.type === "magnet"){
+        player.magnet = 12*60;
+        part(p.x,p.y,35,"magnet");
+        sfx("power");
+        msg = "Magnet! Pickups pull toward Nain for 12 seconds.";
+      }
+      msgTimer = 120;
+    }
+  }
+
+  if(rects(player,L().goal)){
+    if(player.items >= levelItems.length){
+      if(currentLevel < levels.length - 1){
+        totalScore = player.score + 1800 + currentLevel * 500;
+        loadLevel(currentLevel + 1);
+      } else {
+        totalScore = player.score + 3500;
+        startMiniChoice();
+      }
+    } else {
+      msg = `${L().goalName} needs every ${L().itemName.toLowerCase()} pickup first!`;
+      msgTimer = 70;
+    }
+  }
+}
+
+function updateParticles(){
+  for(const p of particles){
+    p.x += p.vx; p.y += p.vy;
+    p.vy += .22; p.vx *= .98; p.life--;
+  }
+  particles = particles.filter(p => p.life > 0);
+}
+
+function updateCamera(){
+  const target = player.x + player.w/2 - W/2;
+  cameraX += (target-cameraX)*.08;
+  cameraX = clamp(cameraX,0,worldWidth-W);
+  if(screenShake > 0) screenShake *= .85;
+  if(msgTimer > 0) msgTimer--;
+}
+
+function round(x,y,w,h,r){
+  const rr = Math.min(r,w/2,h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+rr,y); ctx.lineTo(x+w-rr,y); ctx.quadraticCurveTo(x+w,y,x+w,y+rr);
+  ctx.lineTo(x+w,y+h-rr); ctx.quadraticCurveTo(x+w,y+h,x+w-rr,y+h);
+  ctx.lineTo(x+rr,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-rr);
+  ctx.lineTo(x,y+rr); ctx.quadraticCurveTo(x,y,x+rr,y);
+}
+
+function cloud(x,y,s){
+  ctx.beginPath();
+  ctx.arc(x,y,28*s,0,Math.PI*2);
+  ctx.arc(x+32*s,y-12*s,35*s,0,Math.PI*2);
+  ctx.arc(x+70*s,y,26*s,0,Math.PI*2);
+  ctx.arc(x+34*s,y+12*s,25*s,0,Math.PI*2);
+  ctx.fill();
+}
+
+function drawSky(){
+  const theme = L().theme;
+  const grd = ctx.createLinearGradient(0,0,0,H);
+
+  if(theme === "cavern"){
+    grd.addColorStop(0,"#171029");
+    grd.addColorStop(.42,"#2a1a3d");
+    grd.addColorStop(.43,"#3a2a28");
+    grd.addColorStop(1,"#120d12");
+  } else if(theme === "sky"){
+    grd.addColorStop(0,"#7fdfff");
+    grd.addColorStop(.55,"#d9f7ff");
+    grd.addColorStop(.56,"#b8e8ff");
+    grd.addColorStop(1,"#6aa8ff");
+  } else if(theme === "house2"){
+    grd.addColorStop(0,"#46506f");
+    grd.addColorStop(.35,"#6b5c73");
+    grd.addColorStop(.36,"#8b5d39");
+    grd.addColorStop(1,"#3a2418");
+  } else if(theme === "india"){
+    grd.addColorStop(0,"#ffbd6f");
+    grd.addColorStop(.28,"#ffd994");
+    grd.addColorStop(.52,"#8fd6ff");
+    grd.addColorStop(.53,"#dbb35f");
+    grd.addColorStop(1,"#b77a32");
+  } else if(theme === "beach"){
+    grd.addColorStop(0,"#56c8ff");
+    grd.addColorStop(.46,"#b9f4ff");
+    grd.addColorStop(.47,"#2aa7d5");
+    grd.addColorStop(.68,"#1d78b6");
+    grd.addColorStop(.69,"#f3d27d");
+    grd.addColorStop(1,"#d9a94b");
+  } else {
+    grd.addColorStop(0,"#83d7ff");
+    grd.addColorStop(.42,"#c5f0ff");
+    grd.addColorStop(1,"#4a813f");
+  }
+
+  ctx.fillStyle = grd;
+  ctx.fillRect(0,0,W,H);
+
+  ctx.save();
+  ctx.translate(-cameraX*.18,0);
+  ctx.fillStyle = "rgba(255,255,255,.85)";
+  for(let i=0;i<14;i++) cloud(i*520+100,80+Math.sin(i*1.7)*35,1+(i%3)*.25);
+  ctx.restore();
+
+  if(theme === "beach"){
+    ctx.fillStyle="#fff1a8";
+    ctx.beginPath(); ctx.arc(1060,105,48,0,Math.PI*2); ctx.fill();
+  }
+
+  if(theme === "cavern"){
+    grd.addColorStop(0,"#171029");
+    grd.addColorStop(.42,"#2a1a3d");
+    grd.addColorStop(.43,"#3a2a28");
+    grd.addColorStop(1,"#120d12");
+  } else if(theme === "sky"){
+    grd.addColorStop(0,"#7fdfff");
+    grd.addColorStop(.55,"#d9f7ff");
+    grd.addColorStop(.56,"#b8e8ff");
+    grd.addColorStop(1,"#6aa8ff");
+  } else if(theme === "house2"){
+    ctx.save();
+    ctx.translate(-cameraX*.12,0);
+    for(let x=-120;x<worldWidth+300;x+=420){
+      ctx.fillStyle="rgba(60,35,20,.28)";
+      ctx.fillRect(x,310,230,250);
+      ctx.fillStyle="rgba(255,230,130,.20)";
+      ctx.fillRect(x+40,350,55,70);
+      ctx.fillRect(x+130,350,55,70);
+      ctx.fillStyle="rgba(80,35,20,.36)";
+      ctx.beginPath(); ctx.moveTo(x-15,310); ctx.lineTo(x+115,240); ctx.lineTo(x+245,310); ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  if(theme === "india"){
+    ctx.save();
+    ctx.translate(-cameraX*.08,0);
+    ctx.fillStyle = "rgba(100,60,20,.22)";
+    for(let x=-200;x<worldWidth+400;x+=520){
+      ctx.beginPath();
+      ctx.moveTo(x,505);
+      ctx.lineTo(x+120,360);
+      ctx.lineTo(x+240,505);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(-cameraX*.25,0);
+    for(let x=120;x<worldWidth;x+=620){
+      ctx.fillStyle="rgba(255,240,170,.55)";
+      ctx.fillRect(x,365,120,170);
+      ctx.fillStyle="rgba(180,80,40,.55)";
+      ctx.beginPath();
+      ctx.moveTo(x-10,365); ctx.lineTo(x+60,305); ctx.lineTo(x+130,365); ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+function drawPlatforms(){
+  ctx.save();
+  ctx.translate(-cameraX,0);
+
+  for(const p of L().platforms){
+    ctx.fillStyle = L().theme==="cavern" ? "#34243a" : L().theme==="sky" ? "#6b9fff" : L().theme==="house2" ? "#51301f" : L().theme==="india" ? "#9c642d" : L().theme==="beach" ? "#b9823f" : "#5b3b22";
+    round(p.x,p.y,p.w,p.h,16); ctx.fill();
+    ctx.fillStyle = L().theme==="cavern" ? "#6d4f82" : L().theme==="sky" ? "#ffffff" : L().theme==="house2" ? "#98633d" : L().theme==="india" ? "#d99a4f" : L().theme==="beach" ? "#f4d37a" : "#43a846";
+    round(p.x,p.y,p.w,18,14); ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,.14)";
+    ctx.fillRect(p.x+12,p.y+24,p.w-24,4);
+  }
+
+  for(const s of L().hazards){
+    ctx.fillStyle = L().theme==="cavern" ? "#9ffcff" : L().theme==="sky" ? "#fff27a" : L().theme==="house2" ? "#6b1d1d" : L().theme==="india" ? "#7a2e1c" : L().theme==="beach" ? "#5d7584" : "#313845";
+    for(let x=s.x;x<s.x+s.w;x+=22){
+      ctx.beginPath();
+      ctx.moveTo(x,s.y+s.h); ctx.lineTo(x+11,s.y); ctx.lineTo(x+22,s.y+s.h);
+      ctx.closePath(); ctx.fill();
+    }
+  }
+
+  if(L().bouncers){
+    for(const b of L().bouncers){
+      ctx.fillStyle = "#7c36ff";
+      round(b.x,b.y,b.w,b.h,9); ctx.fill();
+      ctx.fillStyle = "#e5d4ff";
+      round(b.x+8,b.y+3,b.w-16,5,3); ctx.fill();
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function drawCracker(){
+  ctx.fillStyle="#ffdf75"; round(-18,-14,36,28,7); ctx.fill();
+  ctx.strokeStyle="#b16a22"; ctx.lineWidth=3; ctx.stroke();
+  ctx.fillStyle="#443013"; ctx.font="bold 8px Arial"; ctx.textAlign="center"; ctx.fillText("CRACK",0,2);
+}
+function drawCalculator(){
+  ctx.fillStyle="#283044"; round(-18,-22,36,44,6); ctx.fill();
+  ctx.fillStyle="#8fffe2"; round(-12,-17,24,9,2); ctx.fill();
+  ctx.fillStyle="#f1f1f1";
+  for(let y=-3;y<=13;y+=8) for(let x=-10;x<=10;x+=10) ctx.fillRect(x-2,y-2,4,4);
+}
+function drawTea(){
+  ctx.fillStyle="#fff"; round(-15,-12,30,24,5); ctx.fill();
+  ctx.strokeStyle="#6b3b1c"; ctx.lineWidth=3; ctx.stroke();
+  ctx.fillStyle="#9a5a25"; ctx.fillRect(-10,-8,20,9);
+  ctx.strokeStyle="#fff"; ctx.beginPath(); ctx.arc(17,0,7,-Math.PI/2,Math.PI/2); ctx.stroke();
+  ctx.fillStyle="#3a1f0d"; ctx.font="900 8px Arial"; ctx.textAlign="center"; ctx.fillText("TEA",0,16);
+}
+function drawPrime(){
+  ctx.fillStyle="#24c7ff"; round(-13,-24,26,48,7); ctx.fill();
+  ctx.fillStyle="#111"; round(-10,-15,20,22,4); ctx.fill();
+  ctx.fillStyle="#ffffff"; ctx.font="900 7px Arial"; ctx.textAlign="center"; ctx.fillText("PRIME",0,-2);
+  ctx.fillStyle="#dfffff"; ctx.fillRect(-8,-22,16,5);
+}
+function drawCrystalCracker(){
+  ctx.fillStyle="#9ffcff";
+  ctx.beginPath();
+  ctx.moveTo(0,-24); ctx.lineTo(18,-6); ctx.lineTo(10,22); ctx.lineTo(-12,22); ctx.lineTo(-20,-4);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle="#ffffff"; ctx.lineWidth=3; ctx.stroke();
+  ctx.fillStyle="#245b66"; ctx.font="900 7px Arial"; ctx.textAlign="center"; ctx.fillText("CRYS",0,4);
+}
+function drawGoldenCracker(){
+  ctx.fillStyle="#ffd94d"; round(-20,-14,40,28,7); ctx.fill();
+  ctx.strokeStyle="#9b6400"; ctx.lineWidth=3; ctx.stroke();
+  ctx.fillStyle="#fff3a8"; ctx.beginPath(); ctx.arc(-8,-3,3,0,Math.PI*2); ctx.arc(8,5,3,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle="#6b4200"; ctx.font="900 7px Arial"; ctx.textAlign="center"; ctx.fillText("GOLD",0,3);
+}
+function drawShieldPower(){
+  ctx.fillStyle="rgba(80,180,255,.75)";
+  ctx.beginPath(); ctx.arc(0,0,22,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle="#ffffff"; ctx.lineWidth=3; ctx.stroke();
+  ctx.fillStyle="#fff"; ctx.font="900 9px Arial"; ctx.textAlign="center"; ctx.fillText("SHIELD",0,4);
+}
+function drawMagnetPower(){
+  ctx.strokeStyle="#ff4b4b"; ctx.lineWidth=8; ctx.lineCap="round";
+  ctx.beginPath(); ctx.arc(0,2,18,Math.PI*.15,Math.PI*.85,true); ctx.stroke();
+  ctx.fillStyle="#ffffff"; ctx.fillRect(-20,-2,9,12); ctx.fillRect(11,-2,9,12);
+  ctx.fillStyle="#fff"; ctx.font="900 8px Arial"; ctx.textAlign="center"; ctx.fillText("MAG",0,23);
+}
+function drawMint(){
+  ctx.fillStyle="#11243a"; round(-22,-16,44,32,8); ctx.fill();
+  ctx.strokeStyle="#bfffff"; ctx.lineWidth=3; ctx.stroke();
+  ctx.fillStyle="#dfffff"; ctx.font="900 9px Arial"; ctx.textAlign="center"; ctx.fillText("FISH",0,-3); ctx.fillText("MINT",0,9);
+}
+function drawCoffee(){
+  ctx.fillStyle="#fff3da"; round(-16,-18,32,34,8); ctx.fill();
+  ctx.fillStyle="#5b2f17"; round(-11,-9,22,20,5); ctx.fill();
+  ctx.strokeStyle="#fff3da"; ctx.lineWidth=4; ctx.beginPath(); ctx.arc(18,1,8,-Math.PI/2,Math.PI/2); ctx.stroke();
+  ctx.fillStyle="#4a2412"; ctx.font="900 8px Arial"; ctx.textAlign="center"; ctx.fillText("COFFEE",0,18);
+}
+function drawInvisPotion(){
+  ctx.fillStyle="rgba(195,120,255,.75)"; round(-14,-19,28,34,8); ctx.fill();
+  ctx.strokeStyle="#ffffff"; ctx.lineWidth=3; ctx.stroke();
+  ctx.fillStyle="#efe1ff"; ctx.fillRect(-7,-25,14,8);
+  ctx.fillStyle="#4d2078"; ctx.font="900 7px Arial"; ctx.textAlign="center"; ctx.fillText("INVIS",0,4);
+}
+
+function drawItems(){
+  ctx.save();
+  ctx.translate(-cameraX,0);
+
+  for(const c of levelItems){
+    if(c.got) continue;
+    const bob = Math.sin(Date.now()*.006+c.x)*5;
+    ctx.save();
+    ctx.translate(c.x,c.y+bob);
+    ctx.rotate(Math.sin(Date.now()*.004+c.x)*.14);
+    if(currentLevel===0) drawCracker();
+    else if(currentLevel===1) drawCalculator();
+    else if(currentLevel===2) drawTea();
+    else if(L().itemName === "Prime") drawPrime();
+    else if(L().itemName === "Crystal Crackers") drawCrystalCracker();
+    else if(L().itemName === "Golden Crackers") drawGoldenCracker();
+    else drawCracker();
+    ctx.restore();
+  }
+
+  for(const p of levelPowerups){
+    if(p.got) continue;
+    const bob = Math.sin(Date.now()*.007+p.x)*6;
+    ctx.save();
+    ctx.translate(p.x,p.y+bob);
+    if(p.type==="mint") drawMint();
+    else if(p.type==="coffee") drawCoffee();
+    else if(p.type==="shield") drawShieldPower();
+    else if(p.type==="magnet") drawMagnetPower();
+    else drawInvisPotion();
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
+function drawGoal(){
+  const g = L().goal;
+  ctx.save();
+  ctx.translate(-cameraX,0);
+
+  const ready = player.items >= levelItems.length;
+  const glow = ready ? .7 + Math.sin(Date.now()*.01)*.25 : .25;
+
+  if(g.type === "elevator"){
+    ctx.fillStyle = `rgba(120,240,255,${glow})`;
+    ctx.beginPath(); ctx.arc(g.x+g.w/2,g.y+g.h/2,82,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="#3a4652"; round(g.x,g.y,g.w,g.h,10); ctx.fill();
+    ctx.fillStyle="#9ffcff"; ctx.fillRect(g.x+18,g.y+18,g.w-36,14);
+    ctx.fillStyle="#ffffff"; ctx.font="900 16px Arial"; ctx.textAlign="center"; ctx.fillText("ELEVATOR",g.x+g.w/2,g.y-16);
+  } else if(g.type === "portal"){
+    ctx.fillStyle = `rgba(255,230,80,${glow})`;
+    ctx.beginPath(); ctx.arc(g.x+g.w/2,g.y+g.h/2,100,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle="#ffffff"; ctx.lineWidth=10;
+    ctx.beginPath(); ctx.arc(g.x+g.w/2,g.y+g.h/2,48+Math.sin(Date.now()*.01)*8,0,Math.PI*2); ctx.stroke();
+    ctx.fillStyle="#ffffff"; ctx.font="900 18px Arial"; ctx.textAlign="center"; ctx.fillText("SKY PORTAL",g.x+g.w/2,g.y-16);
+  } else if(g.type === "trampoline"){
+    ctx.fillStyle = `rgba(170,80,255,${glow})`;
+    ctx.beginPath(); ctx.arc(g.x+g.w/2,g.y+20,95,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="#2a2a2a"; round(g.x,g.y,g.w,g.h,24); ctx.fill();
+    ctx.fillStyle="#42e6ff"; round(g.x+18,g.y+10,g.w-36,g.h-20,18); ctx.fill();
+    ctx.strokeStyle="#ffffff"; ctx.lineWidth=5; ctx.stroke();
+    ctx.fillStyle="#ffffff"; ctx.font="900 22px Arial"; ctx.textAlign="center"; ctx.fillText("TRAMPOLINE",g.x+g.w/2,g.y-18);
+  } else if(g.type === "city"){
+    ctx.fillStyle = `rgba(255,220,110,${glow})`;
+    ctx.beginPath(); ctx.arc(g.x+g.w/2,g.y+70,125,0,Math.PI*2); ctx.fill();
+
+    ctx.fillStyle="#e2b04e";
+    ctx.fillRect(g.x+10,g.y+65,42,75);
+    ctx.fillRect(g.x+58,g.y+35,52,105);
+    ctx.fillRect(g.x+120,g.y+50,44,90);
+    ctx.fillRect(g.x+170,g.y+20,48,120);
+
+    ctx.fillStyle="#af5e2a";
+    for(let x=0;x<4;x++){
+      ctx.fillRect(g.x+20+x*48,g.y+82,18,18);
+      ctx.fillRect(g.x+20+x*48,g.y+112,18,18);
+    }
+
+    ctx.fillStyle="#ffffff";
+    ctx.font="900 24px Arial";
+    ctx.textAlign="center";
+    ctx.fillText("UJJAIN",g.x+g.w/2,g.y-18);
+  } else {
+    ctx.fillStyle = currentLevel===1 ? `rgba(90,220,255,${glow})` : `rgba(125,80,255,${glow})`;
+    ctx.beginPath(); ctx.arc(g.x+g.w/2,g.y+g.h/2,78,0,Math.PI*2); ctx.fill();
+
+    if(g.type === "pen"){
+      ctx.save();
+      ctx.translate(g.x+g.w/2,g.y+g.h/2); ctx.rotate(-.65);
+      ctx.fillStyle="#151515"; round(-11,-50,22,92,9); ctx.fill();
+      ctx.fillStyle="#f4f4f4"; round(-8,-43,16,62,5); ctx.fill();
+      ctx.fillStyle="#2366ff"; round(-8,-43,16,18,5); ctx.fill();
+      ctx.fillStyle="#c3c3c3"; ctx.beginPath(); ctx.moveTo(-8,42); ctx.lineTo(8,42); ctx.lineTo(0,59); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    } else {
+      ctx.fillStyle="#111"; round(g.x+16,g.y,g.w-32,g.h,14); ctx.fill();
+      ctx.fillStyle="#5fffff"; round(g.x+23,g.y+10,g.w-46,g.h-20,8); ctx.fill();
+      ctx.fillStyle="#111"; ctx.beginPath(); ctx.arc(g.x+g.w/2,g.y+g.h-8,4,0,Math.PI*2); ctx.fill();
+    }
+
+    ctx.font="900 18px Arial";
+    ctx.fillStyle="#fff";
+    ctx.textAlign="center";
+    ctx.fillText(L().goalName,g.x+g.w/2,g.y-24);
+  }
+
+  ctx.restore();
+}
+
+function drawHammock(){
+  if(currentLevel !== 1) return;
+  ctx.save();
+  ctx.translate(-cameraX,0);
+  ctx.strokeStyle="#6b3e1f"; ctx.lineWidth=8;
+  ctx.beginPath(); ctx.moveTo(95,640); ctx.lineTo(95,545); ctx.moveTo(305,640); ctx.lineTo(305,550); ctx.stroke();
+  ctx.strokeStyle="#d34848"; ctx.lineWidth=7;
+  ctx.beginPath(); ctx.moveTo(105,565); ctx.quadraticCurveTo(180,625,295,570); ctx.stroke();
+  ctx.strokeStyle="#ffaaaa"; ctx.lineWidth=3;
+  for(let i=0;i<7;i++){ctx.beginPath();ctx.moveTo(120+i*25,575+i%2*4);ctx.lineTo(150+i*18,620-i%2*12);ctx.stroke()}
+  ctx.fillStyle="#fff"; ctx.font="900 16px Arial"; ctx.textAlign="center"; ctx.fillText("BROKEN HAMMOCK",200,528);
+  ctx.restore();
+}
+
+function drawNainpurDetails(){
+  if(currentLevel !== 2) return;
+  ctx.save();
+  ctx.translate(-cameraX,0);
+
+  for(let x=300;x<worldWidth;x+=800){
+    ctx.fillStyle="#8b4b24";
+    ctx.fillRect(x,600,78,60);
+    ctx.fillStyle="#f5c55d";
+    ctx.beginPath(); ctx.moveTo(x-12,600); ctx.lineTo(x+39,560); ctx.lineTo(x+90,600); ctx.closePath(); ctx.fill();
+    ctx.fillStyle="#fff";
+    ctx.font="900 12px Arial"; ctx.textAlign="center";
+    ctx.fillText("CHAI",x+39,630);
+  }
+
+  for(let x=520;x<worldWidth;x+=950){
+    ctx.fillStyle="#3e8b3e";
+    ctx.fillRect(x,610,12,50);
+    ctx.beginPath();
+    ctx.arc(x+6,590,25,0,Math.PI*2);
+    ctx.arc(x-10,605,20,0,Math.PI*2);
+    ctx.arc(x+25,606,21,0,Math.PI*2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+function drawSigns(){
+  ctx.save();
+  ctx.translate(-cameraX,0);
+  for(const [x,y,t] of L().signs) drawSign(x,y,t);
+  ctx.restore();
+}
+function drawSign(x,y,text){
+  ctx.fillStyle="#7c4a22"; ctx.fillRect(x-4,y-44,8,44);
+  ctx.fillStyle="#f5d58a"; round(x-86,y-78,172,34,6); ctx.fill();
+  ctx.strokeStyle="#7c4a22"; ctx.lineWidth=3; ctx.stroke();
+  ctx.fillStyle="#38210f"; ctx.font="bold 13px Arial"; ctx.textAlign="center"; ctx.fillText(text,x,y-56);
+}
+
+function drawCharacter(o,isPlayer=false){
+  if(!isPlayer && o.type==="horaceDog"){ drawHoraceEnemy(o); return; }
+  ctx.save();
+  ctx.translate(o.x-cameraX+o.w/2,o.y+o.h/2);
+
+  if(isPlayer && o.invincible > 0 && Math.floor(o.invincible/5)%2===0) ctx.globalAlpha = .45;
+  if(isPlayer && player.invis > 0) ctx.globalAlpha = .42;
+
+  const face = isPlayer ? o.face : (player.x > o.x ? 1 : -1);
+  ctx.scale(face,1);
+
+  ctx.fillStyle="rgba(0,0,0,.22)";
+  ctx.beginPath(); ctx.ellipse(0,o.h/2+5,o.w*.48,8,0,0,Math.PI*2); ctx.fill();
+
+  const run = Math.sin(Date.now()*.018+o.x*.05);
+  ctx.strokeStyle="#202020"; ctx.lineWidth=7; ctx.lineCap="round";
+  ctx.beginPath();
+  ctx.moveTo(-9,15); ctx.lineTo(-14+run*5,30);
+  ctx.moveTo(9,15); ctx.lineTo(14-run*5,30);
+  ctx.stroke();
+
+  ctx.fillStyle = isPlayer ? "#ffd24d" : (o.stun>0 ? "#bfffff" : o.color);
+  round(-18,-10,36,34,10); ctx.fill();
+
+  ctx.fillStyle = isPlayer ? "#f0bd80" : (o.type==="suvaha" ? "#8f5c33" : o.type==="henry" ? "#d1a174" : "#f3b17b");
+  ctx.beginPath(); ctx.arc(0,-25,20,0,Math.PI*2); ctx.fill();
+
+  if(!isPlayer && o.type==="louie"){
+    ctx.fillStyle=o.hair;
+    ctx.beginPath(); ctx.arc(-2,-37,20,Math.PI,Math.PI*2); ctx.fill();
+    for(let i=-14;i<=12;i+=7){ctx.beginPath();ctx.arc(i,-40+Math.sin(i)*2,7,0,Math.PI*2);ctx.fill()}
+  } else if(!isPlayer && o.type==="suvaha"){
+    ctx.fillStyle=o.hair;
+    ctx.beginPath(); ctx.arc(0,-35,20,Math.PI,Math.PI*2); ctx.fill();
+    ctx.fillRect(-19,-34,38,11);
+  } else if(!isPlayer && o.type==="henry"){
+    ctx.fillStyle=o.hair;
+    ctx.beginPath(); ctx.arc(0,-38,19,Math.PI,Math.PI*2); ctx.fill();
+    ctx.fillRect(-17,-38,34,12);
+    ctx.fillStyle="#4b2812";
+    ctx.beginPath(); ctx.arc(-12,-36,7,0,Math.PI*2); ctx.arc(8,-39,8,0,Math.PI*2); ctx.arc(17,-34,6,0,Math.PI*2); ctx.fill();
+  } else {
+    ctx.fillStyle="#3b2414";
+    ctx.beginPath(); ctx.arc(0,-38,18,Math.PI,Math.PI*2); ctx.fill();
+  }
+
+  ctx.fillStyle="#111";
+  ctx.beginPath(); ctx.arc(7,-27,2.5,0,Math.PI*2); ctx.fill();
+
+  ctx.strokeStyle="#111"; ctx.lineWidth=2.2; ctx.beginPath();
+  if(isPlayer) ctx.arc(4,-20,6,.1,Math.PI-.1,false);
+  else {ctx.moveTo(4,-19);ctx.lineTo(12,-19)}
+  ctx.stroke();
+
+  ctx.strokeStyle="#202020"; ctx.lineWidth=6;
+  ctx.beginPath();
+  ctx.moveTo(-17,-2); ctx.lineTo(-26,9+run*2);
+  ctx.moveTo(17,-2); ctx.lineTo(26,9-run*2);
+  ctx.stroke();
+
+  ctx.scale(face,1);
+  ctx.font="bold 13px Arial"; ctx.textAlign="center"; ctx.fillStyle="rgba(0,0,0,.55)";
+  ctx.fillText(isPlayer ? "NAIN" : o.name.toUpperCase(),0,-58);
+
+  ctx.restore();
+}
+
+function drawHoraceEnemy(o){
+  ctx.save();
+  ctx.translate(o.x-cameraX+o.w/2,o.y+o.h/2);
+  const face = player.x > o.x ? 1 : -1;
+  ctx.scale(face,1);
+
+  const run = Math.sin(Date.now()*.025+o.x*.04);
+  ctx.fillStyle="rgba(0,0,0,.25)";
+  ctx.beginPath(); ctx.ellipse(0,o.h/2+7,42,9,0,0,Math.PI*2); ctx.fill();
+
+  ctx.fillStyle=o.stun>0?"#d8ffff":"#8b5a2b";
+  round(-34,-14,68,34,18); ctx.fill();
+  round(20,-35,34,32,14); ctx.fill();
+
+  ctx.fillStyle="#4a2813";
+  ctx.beginPath();
+  ctx.ellipse(19,-36,9,18,-.5,0,Math.PI*2);
+  ctx.ellipse(45,-38,9,18,.5,0,Math.PI*2);
+  ctx.fill();
+
+  ctx.fillStyle="#111";
+  ctx.beginPath(); ctx.arc(42,-24,3,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(55,-13,5,0,Math.PI*2); ctx.fill();
+
+  ctx.strokeStyle="#4a2813"; ctx.lineWidth=6; ctx.lineCap="round";
+  ctx.beginPath();
+  ctx.moveTo(-25,14); ctx.lineTo(-29+run*4,31);
+  ctx.moveTo(-5,16); ctx.lineTo(-8-run*4,32);
+  ctx.moveTo(18,16); ctx.lineTo(15+run*3,32);
+  ctx.moveTo(34,12); ctx.lineTo(42-run*3,29);
+  ctx.stroke();
+
+  ctx.strokeStyle="#8b5a2b"; ctx.lineWidth=7;
+  ctx.beginPath(); ctx.moveTo(-34,-4); ctx.quadraticCurveTo(-62,-30,-46,-48); ctx.stroke();
+
+  ctx.scale(face,1);
+  ctx.fillStyle=player.invis>0?"rgba(255,255,255,.45)":"rgba(0,0,0,.55)";
+  ctx.font="900 13px Arial"; ctx.textAlign="center";
+  ctx.fillText(player.invis>0?"HORACE ???":"HORACE",0,-50);
+
+  ctx.restore();
+}
+
+function drawBreathCone(){
+  if(player.mint <= 0 && player.coffee <= 0) return;
+  if(!(keys.f || keys.F)) return;
+
+  ctx.save();
+  ctx.translate(-cameraX,0);
+  ctx.globalAlpha = .38;
+  ctx.fillStyle = player.coffee > 0 ? "#6b3b1a" : "#dfffff";
+
+  const reach = player.coffee > 0 ? 330 : 220;
+  const sx = player.face===1 ? player.x+player.w : player.x;
+  ctx.beginPath();
+  ctx.moveTo(sx,player.y+25);
+  ctx.lineTo(sx+player.face*reach,player.y-15);
+  ctx.lineTo(sx+player.face*reach,player.y+75);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawParticles(){
+  ctx.save();
+  ctx.translate(-cameraX,0);
+  for(const p of particles){
+    ctx.globalAlpha = Math.max(0,p.life/55);
+    ctx.fillStyle =
+      p.kind==="shield" ? "#9ee9ff" :
+      p.kind==="magnet" ? "#ff8b8b" :
+      p.kind==="collect" ? "#ffd84a" :
+      p.kind==="invis" ? "#d6a4ff" :
+      p.kind==="bounce" ? "#b891ff" :
+      p.kind==="shield" ? "#9ee9ff" :
+      p.kind==="magnet" ? "#ff8b8b" :
+      p.kind==="collect" ? "#ffd84a" :
+      p.kind==="invis" ? "#d6a4ff" :
+      p.kind==="coffee" ? "#6b3b1a" :
+      p.kind==="breath" ? "#cfffff" :
+      p.kind==="calc" ? "#8fffe2" :
+      p.kind==="tea" ? "#ffffff" :
+      p.kind==="cracker" ? "#ffe27a" :
+      p.kind==="hit" ? "#ff4c5f" :
+      p.kind==="dash" ? "#8af4ff" : "#dfc398";
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+function drawText(){
+  ctx.save();
+  ctx.textAlign="center";
+
+  if(msgTimer > 0){
+    ctx.font="900 28px Arial";
+    ctx.fillStyle="rgba(0,0,0,.4)";
+    ctx.fillText(msg,W/2+3,112+3);
+    ctx.fillStyle="white";
+    ctx.fillText(msg,W/2,112);
+  }
+
+  if(player.mint > 0){
+    ctx.font="900 20px Arial";
+    ctx.fillStyle="#dfffff";
+    ctx.fillText("Fisherman's Friends active — press F for mint cold breath",W/2,150);
+  }
+
+  if(player.coffee > 0){
+    ctx.font="900 20px Arial";
+    ctx.fillStyle="#f0c08a";
+    ctx.fillText("Coffee active — press F for stinky knockback breath",W/2,150);
+  }
+  if(player.invis > 0){
+    ctx.font="900 20px Arial";
+    ctx.fillStyle="#e8c8ff";
+    ctx.fillText("Invisible to Horace",W/2,150);
+  }
+  if(player.magnet > 0){
+    ctx.font="900 20px Arial";
+    ctx.fillStyle="#ffb5b5";
+    ctx.fillText("Magnet active",W/2,178);
+  }
+  if(player.shield > 0){
+    ctx.font="900 20px Arial";
+    ctx.fillStyle="#bde9ff";
+    ctx.fillText("Shield ready",W/2,206);
+  }
+
+  ctx.font="bold 14px Arial";
+  ctx.fillStyle="rgba(255,255,255,.78)";
+  ctx.textAlign="left";
+  ctx.fillText(`P pause · M mute · R restart · Best: ${bestTime ? bestTime.toFixed(2)+"s" : "--"}`,24,H-22);
+
+  ctx.restore();
+}
+
+
+function startMiniChoice(){
+  miniMode = "choice";
+  running = true;
+  accumulator = 0;
+  player.score = totalScore;
+  msg = "Choose final mini game: Beam Scooter, Tea Brewing, or Nainpack Nainride.";
+  msgTimer = 120;
+  updateHud();
+}
+
+function startScooter(){
+  finalMiniRoute = "scooter";
+  miniMode = "scooter";
+  scooter = {
+    x:80,y:515,w:58,h:42,vx:7.2,vy:0,grounded:false,
+    cam:0,world:3600,finished:false,
+    obstacles:[
+      {x:520,y:610,w:55,h:50},{x:850,y:575,w:70,h:85},{x:1210,y:625,w:110,h:35},
+      {x:1540,y:560,w:70,h:100},{x:1880,y:620,w:130,h:40},{x:2260,y:575,w:80,h:85},
+      {x:2630,y:625,w:120,h:35},{x:3010,y:555,w:80,h:105}
+    ],
+    ramps:[
+      {x:650,y:625,w:110,h:35},{x:1370,y:625,w:125,h:35},{x:2440,y:625,w:130,h:35}
+    ],
+    platforms:[
+      {x:0,y:650,w:3700,h:70},{x:1030,y:575,w:190,h:24},{x:2050,y:575,w:190,h:24}
+    ]
+  };
+  msg = "Beam Scooter: jump obstructions. Crash = whole game restart.";
+  msgTimer = 150;
+}
+
+function startTeaMini(){
+  finalMiniRoute = "tea";
+  miniMode = "tea";
+  player.health = Math.max(player.health, 55);
+  teaGame = {
+    step:0,
+    done:false,
+    timeLeft:38,
+    mistakes:0,
+    heat:0,
+    message:"Hard tea mode: drag items in order before time and heat run out.",
+    teapot:{x:560,y:300,w:160,h:145},
+    items:[
+      {name:"Water",label:"WATER",x:105,y:145,w:118,h:66,color:"#75d8ff",done:false,tip:"start the brew"},
+      {name:"Kettle",label:"KETTLE",x:105,y:238,w:118,h:66,color:"#a7a7a7",done:false,tip:"heat it"},
+      {name:"Tea Leaves",label:"TEA",x:105,y:331,w:118,h:66,color:"#5a3a1b",done:false,tip:"add flavour"},
+      {name:"Sugar",label:"SUGAR",x:105,y:424,w:118,h:66,color:"#ffffff",done:false,tip:"sweet base"},
+      {name:"Milk",label:"MILK",x:1035,y:145,w:118,h:66,color:"#fff4d8",done:false,tip:"make it smooth"},
+      {name:"Honey",label:"HONEY",x:1035,y:238,w:118,h:66,color:"#ffc84d",done:false,tip:"sweeten"},
+      {name:"Lemon",label:"LEMON",x:1035,y:331,w:118,h:66,color:"#fff36d",done:false,tip:"tiny sharpness"},
+      {name:"Stir",label:"STIR",x:1035,y:424,w:118,h:66,color:"#c99155",done:false,tip:"finish it"}
+    ],
+    order:["Water","Kettle","Tea Leaves","Sugar","Milk","Honey","Lemon","Stir"]
+  };
+  msg = "Hard Tea Brewing: more steps, less time, wrong moves hurt more.";
+  msgTimer = 150;
+  updateHud();
+}
+
+function updateMiniGame(){
+  if(miniMode === "choice"){
+    miniChoicePulse += 0.04;
+    return;
+  }
+  if(miniMode === "scooter") updateScooter();
+  else if(miniMode === "tea") updateTeaMini();
+  else if(miniMode === "nainride") updateNainRide();
+  else if(miniMode === "boss") updateFinalBoss();
+  else if(miniMode === "endingCutscene") updateHamishCutscene();
+  else if(miniMode === "secretIntro") updateSecretIntro();
+  else if(miniMode === "hamishRun") updateHamishRun();
+  else if(miniMode === "crackerHeaven") updateCrackerHeaven();
+}
+
+function scooterRect(){ return {x:scooter.x,y:scooter.y,w:scooter.w,h:scooter.h}; }
+
+function updateScooter(){
+  const jump = keys.w || keys.ArrowUp || keys[" "];
+  const down = keys.s || keys.S || keys.ArrowDown;
+  scooter.x += scooter.vx;
+  scooter.vy += 0.9;
+  if(sFastFallBlocked<=0 && fastFallPulse>0 && !scooter.grounded && scooter.y + scooter.h < 645){ scooter.vy = Math.min(scooter.vy + 2.2, 25); fastFallPulse = Math.max(0, fastFallPulse - 1); }
+  scooter.y += scooter.vy;
+  scooter.grounded = false;
+
+  for(const p of scooter.platforms){
+    const r = scooterRect();
+    if(rects(r,p)){
+      const prevBottom = scooter.y + scooter.h - scooter.vy;
+      if(prevBottom <= p.y && scooter.vy >= 0){
+        scooter.y = p.y - scooter.h;
+        scooter.vy = 0;
+        scooter.grounded = true;
+      }
+    }
+  }
+
+  if(jump && scooter.grounded && !player.jumpHeld){
+    scooter.vy = -18;
+    scooter.grounded = false;
+    player.jumpHeld = true;
+    part(scooter.x,scooter.y,10,"dash");
+    sfx("jump");
+  }
+  if(!jump) player.jumpHeld = false;
+
+  for(const o of scooter.obstacles){
+    if(rects(scooterRect(),o)){
+      sfx("hurt");
+      miniMode = null;
+      ui.overlay.style.display = "grid";
+      ui.box.innerHTML = `
+        <h1>Scooter Crash!</h1>
+        <p>Nain hit an obstruction on the Beam scooter. The whole game restarts.</p>
+        <button id="restartBtn">Restart Whole Game</button>
+      `;
+      document.getElementById("restartBtn").onclick = resetGame;
+      running = false;
+      return;
+    }
+  }
+
+  if(scooter.y > H + 120){
+    sfx("hurt");
+    miniMode = null;
+    ui.overlay.style.display = "grid";
+    ui.box.innerHTML = `
+      <h1>Scooter Wipeout!</h1>
+      <p>Nain fell off the scooter course. The whole game restarts.</p>
+      <button id="restartBtn">Restart Whole Game</button>
+    `;
+    document.getElementById("restartBtn").onclick = resetGame;
+    running = false;
+    return;
+  }
+
+  scooter.cam += ((scooter.x - 300) - scooter.cam) * 0.09;
+  scooter.cam = clamp(scooter.cam,0,scooter.world-W);
+
+  if(scooter.x > scooter.world - 230){
+    player.score += 5000;
+    startFinalBossCheckpoint();
+  }
+}
+
+function startNainRide(){
+  finalMiniRoute = "nainride";
+  unlockAchievement("nainride","Nainpack route chosen");
+  miniMode = "nainride";
+  nainrideCheckpoint = false;
+  nainride = {
+    x:150,y:330,w:44,h:54,vy:0,cam:0,world:2400,thrust:false,
+    obstacles:[
+      {x:620,y:90,w:62,h:210},
+      {x:900,y:455,w:68,h:195},
+      {x:1220,y:70,w:64,h:220},
+      {x:1530,y:430,w:70,h:220},
+      {x:1840,y:95,w:66,h:210}
+    ],
+    zappers:[
+      {x:760,y:320,w:135,h:18},
+      {x:1390,y:285,w:145,h:18},
+      {x:1985,y:350,w:140,h:18}
+    ],
+    coins:[[430,220],[690,245],[1080,340],[1320,210],[1690,310],[2090,265]]
+  };
+  msg = "Nainpack Nainride: no checkpoint. Beat it to unlock the secret Hamish chase.";
+  msgTimer = 170;
+  updateHud();
+}
+
+function updateNainRide(){
+  if(!nainride) return;
+  const thrust = keys.w || keys.ArrowUp || keys[" "];
+  nainride.thrust = thrust;
+  nainride.x += 4.8;
+  nainride.vy += thrust ? -0.52 : 0.38;
+  nainride.vy = clamp(nainride.vy,-6.8,7.8);
+  nainride.y += nainride.vy;
+  if(thrust && Math.random()<0.75) part(nainride.x-5,nainride.y+48,2,"dash");
+
+  if(nainride.y < 28){ nainride.y=28; nainride.vy=1; }
+  if(nainride.y+nainride.h > 638){ nainride.y=638-nainride.h; nainride.vy=-2; }
+
+  const r={x:nainride.x,y:nainride.y,w:nainride.w,h:nainride.h};
+  for(const o of nainride.obstacles){
+    if(rects(r,o)){
+      sfx("hurt");
+      ui.overlay.style.display = "grid";
+      ui.box.innerHTML = `<h1>Nainpack Crash!</h1><p>Nain slammed into an obstacle. The whole game restarts.</p><button id="restartBtn">Restart Whole Game</button>`;
+      document.getElementById("restartBtn").onclick = resetGame;
+      running = false;
+      return;
+    }
+  }
+  for(const z of nainride.zappers){
+    if(rects(r,z)){
+      sfx("hurt");
+      ui.overlay.style.display = "grid";
+      ui.box.innerHTML = `<h1>Zapped!</h1><p>Nain got zapped mid-flight. The whole game restarts.</p><button id="restartBtn">Restart Whole Game</button>`;
+      document.getElementById("restartBtn").onclick = resetGame;
+      running = false;
+      return;
+    }
+  }
+  for(const c of nainride.coins){
+    if(!c.got && rects(r,{x:c[0]-12,y:c[1]-12,w:24,h:24})){
+      c.got=true; player.score+=150; sfx("collect"); part(c[0],c[1],12,"collect");
+    }
+  }
+  nainride.cam += ((nainride.x-300)-nainride.cam)*0.1;
+  nainride.cam = clamp(nainride.cam,0,nainride.world-W);
+  if(nainride.x > nainride.world - 160){
+    player.score += 5200;
+    startFinalBossCheckpoint();
+  }
+}
+
+function drawNainRideMini(){
+  const cam=nainride?nainride.cam:0;
+  const grd=ctx.createLinearGradient(0,0,0,H);
+  grd.addColorStop(0,"#101629");
+  grd.addColorStop(.5,"#253b6f");
+  grd.addColorStop(1,"#111018");
+  ctx.fillStyle=grd; ctx.fillRect(0,0,W,H);
+  ctx.save(); ctx.translate(-cam,0);
+  ctx.fillStyle="rgba(255,255,255,.45)";
+  for(let x=80;x<nainride.world;x+=360) cloud(x,75+Math.sin(x)*35,.85);
+
+  ctx.fillStyle="#191a22"; ctx.fillRect(0,650,nainride.world,70);
+  ctx.fillStyle="#34364a"; ctx.fillRect(0,0,nainride.world,18);
+
+  for(const o of nainride.obstacles){
+    ctx.fillStyle="#ff4d5f"; round(o.x,o.y,o.w,o.h,12); ctx.fill();
+    ctx.fillStyle="rgba(255,255,255,.4)"; ctx.fillRect(o.x+10,o.y+10,o.w-20,8);
+  }
+  for(const z of nainride.zappers){
+    ctx.fillStyle="#fff15a"; round(z.x,z.y,z.w,z.h,10); ctx.fill();
+    ctx.strokeStyle="#2affff"; ctx.lineWidth=5;
+    ctx.beginPath(); ctx.moveTo(z.x,z.y+z.h/2);
+    for(let i=0;i<z.w;i+=22) ctx.lineTo(z.x+i,z.y+z.h/2+(i%44===0?-18:18));
+    ctx.stroke();
+  }
+  for(const c of nainride.coins){
+    if(c.got) continue;
+    ctx.fillStyle="#ffd84a"; ctx.beginPath(); ctx.arc(c[0],c[1],13,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="#8a5a00"; ctx.font="900 12px Arial"; ctx.textAlign="center"; ctx.fillText("$",c[0],c[1]+4);
+  }
+
+  ctx.fillStyle="#6dff8e"; ctx.fillRect(nainride.world-80,90,18,560);
+  ctx.fillStyle="#fff"; ctx.font="900 28px Arial"; ctx.textAlign="center"; ctx.fillText("FINISH",nainride.world-130,82);
+
+  drawJetpackNain(nainride.x,nainride.y,nainride.thrust);
+  ctx.restore();
+
+  ctx.fillStyle="rgba(0,0,0,.45)"; round(24,92,650,46,15); ctx.fill();
+  ctx.fillStyle="#fff"; ctx.font="900 22px Arial"; ctx.textAlign="left";
+  ctx.fillText("Nainpack Nainride: no checkpoint. Feather W / Up / Space to fly.",42,123);
+}
+
+function drawJetpackNain(x,y,thrust){
+  ctx.save(); ctx.translate(x,y);
+  ctx.fillStyle="#ffd24d"; round(10,15,34,38,10); ctx.fill();
+  ctx.fillStyle="#f0bd80"; ctx.beginPath(); ctx.arc(27,4,15,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle="#3b2414"; ctx.beginPath(); ctx.arc(27,-6,13,Math.PI,Math.PI*2); ctx.fill();
+  ctx.fillStyle="#333"; round(-8,20,18,30,6); ctx.fill();
+  ctx.strokeStyle="#222"; ctx.lineWidth=5; ctx.beginPath(); ctx.moveTo(12,28); ctx.lineTo(-5,45); ctx.moveTo(42,28); ctx.lineTo(55,42); ctx.stroke();
+  if(thrust){
+    ctx.fillStyle="#ff8b2e"; ctx.beginPath(); ctx.moveTo(-8,50); ctx.lineTo(2,86+Math.sin(Date.now()*.03)*8); ctx.lineTo(12,50); ctx.closePath(); ctx.fill();
+    ctx.fillStyle="#fff15a"; ctx.beginPath(); ctx.moveTo(-4,50); ctx.lineTo(3,72); ctx.lineTo(8,50); ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function finishTeaMini(){
+  if(!teaGame || teaGame.done) return;
+  teaGame.done = true;
+  player.score += 4500 + Math.floor(Math.max(0, teaGame.timeLeft) * 25);
+  msg = "Perfect tea brewed! Checkpoint reached.";
+  msgTimer = 120;
+  startFinalBossCheckpoint();
+}
+
+
+function failTeaMini(reason){
+  if(!teaGame || teaGame.done) return;
+  teaGame.message = reason + " Choose a mini game again.";
+  player.health = Math.max(25, player.health - 20);
+  msg = reason;
+  msgTimer = 110;
+  miniMode = "choice";
+  teaGame = null;
+  updateHud();
+}
+
+function updateTeaMini(){
+  if(!teaGame || teaGame.done) return;
+  teaGame.timeLeft -= 1/60;
+  teaGame.heat = Math.min(100, teaGame.heat + 0.085 + teaGame.mistakes*0.012);
+  if(teaGame.timeLeft <= 0){
+    failTeaMini("Tea timer ran out!");
+  }
+  if(teaGame.heat >= 100){
+    failTeaMini("Tea overheated!");
+  }
+}
+
+function startFinalBossCheckpoint(){
+  bossCheckpoint = true;
+  miniMode = "boss";
+  totalScore = player.score;
+  player.health = Math.min(100, Math.max(player.health, 65));
+  setupFinalBoss();
+  msg = "Checkpoint! Jump on purple BOUNCE pads, then smash into Nibscurfy.";
+  msgTimer = 160;
+  updateHud();
+}
+
+function restartFinalBoss(){
+  miniMode = "boss";
+  running = true;
+  ui.overlay.style.display = "none";
+  player.health = 65;
+  player.score = totalScore;
+  setupFinalBoss();
+  msg = "Checkpoint restart: use purple BOUNCE pads to hit Nibscurfy.";
+  msgTimer = 130;
+}
+
+function setupFinalBoss(){
+  boss = {
+    n:{x:900,y:355,w:84,h:96,vx:0,vy:0,hp:8,maxHp:8,grounded:false,stun:0,face:-1,hitFlash:0},
+    monkey:{x:690,y:190,w:62,h:58,t:0,shoot:.35,side:1},
+    // Bounce pads are deliberately ABOVE the platforms so they are usable.
+    pads:[{x:225,y:528,w:130,h:22},{x:545,y:438,w:130,h:22},{x:920,y:523,w:130,h:22}],
+    platforms:[{x:0,y:660,w:1280,h:80},{x:185,y:575,w:210,h:32},{x:505,y:485,w:210,h:32},{x:870,y:570,w:230,h:32}],
+    healthPower:{x:1180,y:595,w:34,h:34,got:false},
+    bounceAttack:0,
+    hitCooldown:0
+  };
+  fireballs = [];
+  cameraX = 0;
+  player.x = 95; player.y = 565; player.vx = 0; player.vy = 0; player.invincible = 90; player.jumpHeld = false;
+}
+
+function bossPlayerCollidePlatforms(){
+  player.grounded = false;
+  for(const p of boss.platforms){
+    if(rects(player,p)){
+      const prevBottom = player.y+player.h-player.vy;
+      if(prevBottom <= p.y && player.vy >= 0){player.y=p.y-player.h;player.vy=0;player.grounded=true;}
+      else if(player.x < p.x) { player.x=p.x-player.w; player.vx=0; }
+      else if(player.x+player.w > p.x+p.w) { player.x=p.x+p.w; player.vx=0; }
+    }
+  }
+}
+
+function updateFinalBoss(){
+  if(!boss) setupFinalBoss();
+  const left=keys.a||keys.ArrowLeft, right=keys.d||keys.ArrowRight, jump=keys.w||keys.ArrowUp||keys[" "], down=keys.s||keys.S||keys.ArrowDown;
+  if(left){player.vx-=player.speed;player.face=-1}
+  if(right){player.vx+=player.speed;player.face=1}
+  if(!left&&!right&&player.grounded) player.vx*=friction;
+  if(jump&&player.grounded&&!player.jumpHeld){player.vy=-18;player.jumpHeld=true; sfx("jump"); runStats.jumps++; if(runStats.jumps===20) unlockAchievement("hopper","20 jumps");}
+  if(!jump) player.jumpHeld=false;
+  player.vx=clamp(player.vx,-8,8); player.vy+=gravity; if(fastFallAllowed()){player.vy=Math.min(player.vy+2.4,24); fastFallPulse = Math.max(0, fastFallPulse - 1);} player.x+=player.vx; bossPlayerCollidePlatforms(); player.y+=player.vy; bossPlayerCollidePlatforms();
+  player.x=clamp(player.x,0,W-player.w);
+  if(player.y>H+80) hurt(20, W/2);
+  if(player.invincible>0) player.invincible--;
+
+  if(boss.bounceAttack>0) boss.bounceAttack--;
+  if(boss.hitCooldown>0) boss.hitCooldown--;
+  for(const pad of boss.pads){
+    const falling = player.vy>=-2 && player.x+player.w>pad.x-8 && player.x<pad.x+pad.w+8 && player.y+player.h>pad.y-6 && player.y+player.h<pad.y+48;
+    if(falling){
+      player.y=pad.y-player.h;
+      player.vy=-28;
+      boss.bounceAttack=115;
+      part(pad.x+pad.w/2,pad.y,34,"bounce");
+      sfx("bounce");
+      msg="Bounce charged! Smash into Nibscurfy!";
+      msgTimer=55;
+    }
+  }
+
+  const n=boss.n;
+  if(n.hitFlash>0) n.hitFlash--;
+  if(n.stun>0) n.stun--; else {
+    const dx=(player.x+player.w/2)-(n.x+n.w/2);
+    n.face=dx>0?1:-1; n.vx+=Math.sign(dx)*0.34; n.vx=clamp(n.vx,-4.2,4.2);
+  }
+  n.vy+=gravity; n.x+=n.vx; n.y+=n.vy;
+  n.grounded=false;
+  for(const p of boss.platforms){ if(rects(n,p)){ const prev=n.y+n.h-n.vy; if(prev<=p.y&&n.vy>=0){n.y=p.y-n.h;n.vy=0;n.grounded=true;} } }
+  n.x=clamp(n.x,40,W-n.w-40); n.vx*=n.grounded?.91:.98;
+
+  const nibBody={x:n.x,y:n.y,w:n.w,h:n.h};
+  const bounceHitbox={x:n.x-34,y:n.y-50,w:n.w+68,h:n.h+76};
+  const playerBottom=player.y+player.h;
+  const cleanBounceHit = boss.bounceAttack>0 && boss.hitCooldown<=0 && rects(player,bounceHitbox) && playerBottom > n.y-35 && player.y < n.y+n.h;
+
+  if(cleanBounceHit){
+    n.hp--;
+    runStats.bossHits++;
+    if(runStats.bossHits===1) unlockAchievement("boss_bonk","First Nibscurfy hit");
+    boss.hitCooldown=60;
+    n.stun=78;
+    n.hitFlash=18;
+    n.vx=(player.x<n.x?-1:1)*9;
+    n.vy=-10;
+    player.vy=-19;
+    boss.bounceAttack=0;
+    player.score+=900;
+    screenShake=15;
+    part(n.x+n.w/2,n.y+20,55,"hit");
+    sfx("bossHit");
+    msg=`Nibscurfy smashed! ${Math.max(0,n.hp)} bounces left. Wait 1 sec for next hit.`;
+    msgTimer=90;
+    if(n.hp<=0){
+      player.score+=7000;
+      startHamishCutscene();
+      return;
+    }
+  } else if(rects(player,nibBody)){
+    hurt(14,n.x+n.w/2);
+  }
+
+  boss.monkey.t += 1/60;
+  boss.monkey.x = 620 + Math.sin(boss.monkey.t*1.7)*360;
+  boss.monkey.y = 150 + Math.sin(boss.monkey.t*2.1)*35;
+  boss.monkey.shoot -= 1/60;
+  if(boss.monkey.shoot<=0){
+    const dx=(player.x-boss.monkey.x), dy=(player.y-boss.monkey.y), len=Math.hypot(dx,dy)||1;
+    const baseAng=Math.atan2(dy,dx);
+    for(const spread of [-0.25,0,0.25]){
+      const a=baseAng+spread;
+      fireballs.push({x:boss.monkey.x+30,y:boss.monkey.y+35,vx:Math.cos(a)*5.2,vy:Math.sin(a)*5.2,r:11,life:230});
+    }
+    boss.monkey.shoot=.30;
+    sfx("fire");
+  }
+  for(const f of fireballs){ f.x+=f.vx; f.y+=f.vy; f.life--; if(rects(player,{x:f.x-f.r,y:f.y-f.r,w:f.r*2,h:f.r*2})){ f.life=0; hurt(6,f.x); } }
+  fireballs = fireballs.filter(f=>f.life>0&&f.x>-50&&f.x<W+50&&f.y>-50&&f.y<H+50);
+
+  if(boss.healthPower && !boss.healthPower.got && rects(player,boss.healthPower)){ boss.healthPower.got=true; player.health=Math.min(100,player.health+30); part(boss.healthPower.x,boss.healthPower.y,30,"tea"); msg="Health restored!"; msgTimer=70; }
+  updateHud();
+}
+
+
+
+function startSecretHamishRunIntro(){
+  miniMode = "secretIntro";
+  endCutscene = {t:0,phase:0,route:"secretRun"};
+  fireballs = [];
+  player.invincible = 9999;
+  player.vx = 0;
+  player.vy = 0;
+  player.x = 420;
+  player.y = 560;
+  runStats.secrets++;
+  unlockAchievement("secret_route","Secret Hamish route");
+  msg = "Secret route unlocked...";
+  msgTimer = 120;
+  updateHud();
+}
+
+function updateSecretIntro(){
+  if(!endCutscene) endCutscene = {t:0,phase:0,route:"secretRun"};
+  endCutscene.t++;
+  const t=endCutscene.t;
+  if(t===80){ msg="Hamish Hughes spawns in again."; msgTimer=110; screenShake=10; }
+  if(t===190){ msg="Nain refuses to get infected. RUN."; msgTimer=130; screenShake=16; }
+  if(t>270) startHamishRun();
+  updateHud();
+}
+
+function startHamishRun(){
+  miniMode = "hamishRun";
+  hamishRun = {
+    x:0, cam:0, world:4300,
+    hamish:{x:-220,y:540,w:80,h:118,vx:0},
+    platforms:[
+      {x:0,y:660,w:700,h:80},{x:820,y:610,w:260,h:42},{x:1200,y:545,w:220,h:38},
+      {x:1540,y:615,w:340,h:70},{x:2020,y:540,w:240,h:38},{x:2400,y:465,w:220,h:38},
+      {x:2780,y:595,w:380,h:70},{x:3300,y:525,w:230,h:38},{x:3660,y:640,w:760,h:90}
+    ],
+    hazards:[
+      {x:720,y:640,w:80,h:35},{x:1110,y:640,w:80,h:35},{x:1900,y:640,w:100,h:35},
+      {x:2670,y:640,w:95,h:35},{x:3180,y:640,w:90,h:35}
+    ],
+    crackers:[
+      [600,585],[940,540],[1320,475],[1720,545],[2140,475],[2500,400],[2960,525],[3400,460]
+    ],
+    heaven:{x:4000,y:540,w:210,h:100}
+  };
+  player.x = 80;
+  player.y = 560;
+  player.vx = 0;
+  player.vy = 0;
+  player.invincible = 80;
+  player.health = Math.max(player.health,80);
+  msg = "Secret final level: run from Hamish Hughes!";
+  msgTimer = 150;
+  updateHud();
+}
+
+function hamishRunCollidePlatforms(){
+  player.grounded = false;
+  for(const p of hamishRun.platforms){
+    if(rects(player,p)){
+      const prevBottom = player.y+player.h-player.vy;
+      const prevTop = player.y-player.vy;
+      const prevRight = player.x+player.w-player.vx;
+      const prevLeft = player.x-player.vx;
+      if(prevBottom <= p.y && player.vy >= 0){
+        player.y=p.y-player.h; player.vy=0; player.grounded=true;
+      } else if(prevTop >= p.y+p.h && player.vy < 0){
+        player.y=p.y+p.h; player.vy=0;
+      } else if(prevRight <= p.x && player.vx > 0){
+        player.x=p.x-player.w; player.vx=0;
+      } else if(prevLeft >= p.x+p.w && player.vx < 0){
+        player.x=p.x+p.w; player.vx=0;
+      }
+    }
+  }
+}
+
+function updateHamishRun(){
+  if(!hamishRun) return;
+  const left=keys.a||keys.ArrowLeft, right=keys.d||keys.ArrowRight, jump=keys.w||keys.ArrowUp||keys[" "], down=keys.s||keys.S||keys.ArrowDown;
+
+  // Constant chase pressure: Nain must keep moving.
+  if(left){player.vx-=player.speed*.85; player.face=-1;}
+  if(right){player.vx+=player.speed*1.08; player.face=1;}
+  if(!left&&!right&&player.grounded) player.vx*=.88;
+
+  if(jump&&player.grounded&&!player.jumpHeld){player.vy=-18.5; player.jumpHeld=true; sfx("jump");}
+  if(!jump) player.jumpHeld=false;
+
+  player.vx=clamp(player.vx,-7.5,9.2);
+  player.vy+=gravity;
+  if(fastFallAllowed()){ player.vy=Math.min(player.vy+2.4,24); fastFallPulse = Math.max(0, fastFallPulse - 1); }
+
+  player.x+=player.vx; hamishRunCollidePlatforms();
+  player.y+=player.vy; hamishRunCollidePlatforms();
+  player.x=clamp(player.x,0,hamishRun.world-player.w);
+
+  if(player.y>H+100){ failHamishRun("Nain fell during the Hamish chase!"); return; }
+
+  const h=hamishRun.hamish;
+  h.x += 3.2 + Math.max(0,(player.x-h.x-280))*0.012;
+  h.y = 540 + Math.sin(Date.now()*.008)*8;
+
+  if(rects(player,{x:h.x,y:h.y,w:h.w,h:h.h})){ failHamishRun("Hamish caught Nain and infected him!"); return; }
+
+  for(const hz of hamishRun.hazards){
+    if(rects(player,hz)){ hurt(10,hz.x); }
+  }
+
+  for(const c of hamishRun.crackers){
+    if(!c.got && rects(player,{x:c[0]-14,y:c[1]-14,w:28,h:28})){
+      c.got=true; player.score+=250; sfx("collect"); part(c[0],c[1],14,"cracker");
+    }
+  }
+
+  hamishRun.cam += ((player.x-300)-hamishRun.cam)*0.10;
+  hamishRun.cam=clamp(hamishRun.cam,0,hamishRun.world-W);
+
+  if(rects(player,hamishRun.heaven)){
+    startCrackerHeavenCutscene();
+  }
+  updateHud();
+}
+
+function failHamishRun(text){
+  sfx("hurt");
+  ui.overlay.style.display="grid";
+  ui.box.innerHTML=`<h1>Secret Run Failed</h1><p>${text}</p><button id="restartBtn">Restart Whole Game</button>`;
+  document.getElementById("restartBtn").onclick=resetGame;
+  running=false;
+}
+
+function startCrackerHeavenCutscene(){
+  miniMode="crackerHeaven";
+  endCutscene={t:0,phase:0,route:"crackerHeaven"};
+  player.vx=0; player.vy=0; player.invincible=9999;
+  unlockAchievement("cracker_heaven","Heaven of Crackers");
+  msg="Nain found the Heaven of Crackers.";
+  msgTimer=160;
+  sfx("win");
+}
+
+function updateCrackerHeaven(){
+  if(!endCutscene) endCutscene={t:0,phase:0,route:"crackerHeaven"};
+  endCutscene.t++;
+  if(endCutscene.t>420) end(true);
+  updateHud();
+}
+
+function drawSecretIntro(){
+  const t=endCutscene?endCutscene.t:0;
+  const grd=ctx.createLinearGradient(0,0,0,H);
+  grd.addColorStop(0,"#07030d"); grd.addColorStop(.55,"#2d0614"); grd.addColorStop(1,"#07030d");
+  ctx.fillStyle=grd; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle="rgba(255,0,70,.18)";
+  for(let i=0;i<12;i++){ctx.beginPath();ctx.arc(90+i*120,130+Math.sin(t*.03+i)*45,45,0,Math.PI*2);ctx.fill();}
+
+  ctx.fillStyle="#fff";
+  ctx.font="900 42px Arial";
+  ctx.textAlign="center";
+  ctx.fillText(t<160?"Hamish Hughes returns...":"RUN FROM HAMISH",W/2,100);
+
+  drawCutsceneNain(430,560,false);
+  drawCutsceneHamish(t<80?1300:900,450);
+
+  if(t>170){
+    ctx.fillStyle="#ffdddd";
+    ctx.font="900 24px Arial";
+    ctx.fillText("Secret chase begins now.",W/2,610);
+  }
+}
+
+function drawHamishRun(){
+  if(!hamishRun) return;
+  const cam=hamishRun.cam;
+  const grd=ctx.createLinearGradient(0,0,0,H);
+  grd.addColorStop(0,"#12030b"); grd.addColorStop(.45,"#3b0714"); grd.addColorStop(1,"#14070c");
+  ctx.fillStyle=grd; ctx.fillRect(0,0,W,H);
+
+  ctx.save(); ctx.translate(-cam,0);
+  ctx.fillStyle="rgba(255,0,60,.15)";
+  for(let x=0;x<hamishRun.world;x+=260){ctx.beginPath();ctx.arc(x,150+Math.sin(x*.02)*35,60,0,Math.PI*2);ctx.fill();}
+
+  for(const p of hamishRun.platforms){
+    ctx.fillStyle="#3a1722"; round(p.x,p.y,p.w,p.h,14); ctx.fill();
+    ctx.fillStyle="#8c2639"; ctx.fillRect(p.x,p.y,p.w,6);
+  }
+  for(const hz of hamishRun.hazards){
+    ctx.fillStyle="#ff2e4d";
+    for(let x=hz.x;x<hz.x+hz.w;x+=20){ctx.beginPath();ctx.moveTo(x,hz.y+hz.h);ctx.lineTo(x+10,hz.y);ctx.lineTo(x+20,hz.y+hz.h);ctx.closePath();ctx.fill();}
+  }
+  for(const c of hamishRun.crackers){
+    if(c.got) continue;
+    ctx.save(); ctx.translate(c[0],c[1]); drawCracker(); ctx.restore();
+  }
+
+  const heaven=hamishRun.heaven;
+  ctx.fillStyle="rgba(255,230,80,.45)"; ctx.beginPath(); ctx.arc(heaven.x+100,heaven.y+30,115,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle="#ffe27a"; round(heaven.x,heaven.y,heaven.w,heaven.h,18); ctx.fill();
+  ctx.fillStyle="#6b3b1c"; ctx.font="900 18px Arial"; ctx.textAlign="center"; ctx.fillText("CRACKER HEAVEN",heaven.x+heaven.w/2,heaven.y+55);
+
+  drawCutsceneHamish(hamishRun.hamish.x,hamishRun.hamish.y-95);
+  drawCharacter(player,true);
+
+  ctx.restore();
+
+  ctx.fillStyle="rgba(0,0,0,.50)"; round(24,92,660,48,15); ctx.fill();
+  ctx.fillStyle="#fff"; ctx.font="900 22px Arial"; ctx.textAlign="left";
+  ctx.fillText("SECRET RUN: Hamish is chasing. Reach the Heaven of Crackers.",42,124);
+}
+
+function drawCrackerHeaven(){
+  const t=endCutscene?endCutscene.t:0;
+  const grd=ctx.createLinearGradient(0,0,0,H);
+  grd.addColorStop(0,"#fff6a6"); grd.addColorStop(.45,"#ffe27a"); grd.addColorStop(1,"#f7b84a");
+  ctx.fillStyle=grd; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle="rgba(255,255,255,.65)";
+  for(let i=0;i<14;i++) cloud(80+i*100,70+Math.sin(t*.03+i)*30,.75);
+
+  for(let i=0;i<90;i++){
+    const x=(i*97 + Math.sin(t*.02+i)*20)%W;
+    const y=180 + (i*53)%450;
+    ctx.save(); ctx.translate(x,y); ctx.rotate(Math.sin(t*.02+i)*.2); drawCracker(); ctx.restore();
+  }
+
+  drawCutsceneNain(W/2-40,520,false);
+
+  ctx.fillStyle="#5a320e";
+  ctx.font="900 48px Arial"; ctx.textAlign="center";
+  ctx.fillText("THE HEAVEN OF CRACKERS",W/2,110);
+  ctx.font="900 24px Arial";
+  ctx.fillText("Nain escaped Hamish and found infinite crackers.",W/2,155);
+}
+
+function drawCutsceneNain(x,y,rage){
+  ctx.save(); ctx.translate(x,y);
+  ctx.fillStyle="rgba(0,0,0,.25)"; ctx.beginPath(); ctx.ellipse(30,78,55,12,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle="#ffd24d"; round(0,18,52,34,12); ctx.fill();
+  ctx.fillStyle="#f0bd80"; ctx.beginPath(); ctx.arc(58,30,17,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle=rage?"#ff3333":"#111"; ctx.beginPath(); ctx.arc(64,28,3,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle="#3b2414"; ctx.beginPath(); ctx.arc(58,18,15,Math.PI,Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+function drawCutsceneHamish(x,y){
+  ctx.save(); ctx.translate(x,y);
+  ctx.fillStyle="rgba(255,0,80,.28)"; ctx.beginPath(); ctx.arc(0,0,105+Math.sin(Date.now()*.005)*12,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle="#1a0624"; round(-42,-35,84,110,24); ctx.fill();
+  ctx.fillStyle="#d6c1ff"; ctx.beginPath(); ctx.arc(0,-58,31,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle="#111"; ctx.beginPath(); ctx.arc(-10,-61,4,0,Math.PI*2); ctx.arc(12,-61,4,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle="#7d2cff"; ctx.lineWidth=8; ctx.lineCap="round";
+  ctx.beginPath(); ctx.moveTo(-36,-10); ctx.lineTo(-85,-55); ctx.moveTo(36,-10); ctx.lineTo(85,-55); ctx.stroke();
+  ctx.fillStyle="#ffffff"; ctx.font="900 18px Arial"; ctx.textAlign="center"; ctx.fillText("HAMISH",0,-108);
+  ctx.restore();
+}
+
+function startHamishCutscene(){
+  if(finalMiniRoute === "nainride"){ startSecretHamishRunIntro(); return; }
+  miniMode = "endingCutscene";
+  endCutscene = {t:0,phase:0,route:finalMiniRoute};
+  fireballs = [];
+  screenShake = 0;
+  player.invincible = 9999;
+  player.vx = 0;
+  player.vy = 0;
+  player.x = 430;
+  player.y = 560;
+  msg = "Nibscurfy defeated...";
+  msgTimer = 120;
+  updateHud();
+}
+
+function updateHamishCutscene(){
+  if(!endCutscene) endCutscene = {t:0,phase:0,route:finalMiniRoute};
+  endCutscene.t++;
+  const t=endCutscene.t;
+  const escape = endCutscene.route === "nainride";
+
+  if(t===80){ msg="The air turns cold..."; msgTimer=100; }
+  if(t===170){ msg="HAMISH HUGHES appears."; msgTimer=120; screenShake=10; }
+
+  if(escape){
+    if(t===285){ msg="Hamish tries to cough the rage virus..."; msgTimer=120; screenShake=10; }
+    if(t===350){ msg="Nain fires up the Nainpack and escapes!"; msgTimer=140; screenShake=12; part(player.x+25,player.y+45,90,"dash"); sfx("dash"); }
+    if(t>500){ end(true); }
+  } else {
+    if(t===300){ msg="Hamish coughs the rage virus onto Nain!"; msgTimer=130; screenShake=16; part(player.x+25,player.y+18,70,"hit"); }
+    if(t===430){ msg="Hamish jumps on Nain. The rage virus takes hold."; msgTimer=150; screenShake=20; part(player.x+25,player.y+10,90,"hit"); }
+    if(t>590){ end(true); }
+  }
+  updateHud();
+}
+
+function drawHamishCutscene(){
+  const t=endCutscene?endCutscene.t:0;
+  const escape=endCutscene && endCutscene.route==="nainride";
+  const grd=ctx.createLinearGradient(0,0,0,H);
+  grd.addColorStop(0,"#09050f");
+  grd.addColorStop(.55,"#2b0610");
+  grd.addColorStop(1,"#050208");
+  ctx.fillStyle=grd;
+  ctx.fillRect(0,0,W,H);
+
+  ctx.fillStyle="rgba(255,0,60,.18)";
+  for(let i=0;i<12;i++){
+    ctx.beginPath();
+    ctx.arc(90+i*120,120+Math.sin(t*.025+i)*50,45+Math.sin(t*.03+i)*12,0,Math.PI*2);
+    ctx.fill();
+  }
+
+  // fallen/idle Nain
+  ctx.save();
+  ctx.translate(escape && t>350 ? player.x+(t-350)*5 : player.x, escape && t>350 ? player.y-(t-350)*1.6 : player.y);
+  ctx.fillStyle="rgba(0,0,0,.35)";
+  ctx.beginPath(); ctx.ellipse(30,78,55,12,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle="#ffd24d"; round(0,18,52,34,12); ctx.fill();
+  ctx.fillStyle="#f0bd80"; ctx.beginPath(); ctx.arc(58,30,17,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle=t>300?"#ff3333":"#111";
+  ctx.beginPath(); ctx.arc(64,28,3,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle="#3b2414"; ctx.beginPath(); ctx.arc(58,18,15,Math.PI,Math.PI*2); ctx.fill();
+  if(escape && t>350){ctx.fillStyle="#333"; round(-15,22,16,34,6); ctx.fill(); ctx.fillStyle="#ff8b2e"; ctx.beginPath(); ctx.moveTo(-15,55); ctx.lineTo(-5,95); ctx.lineTo(3,55); ctx.closePath(); ctx.fill();}
+  ctx.restore();
+
+  // Hamish god-like character
+  const hx = t<170 ? 1500 : Math.max(790,1500-(t-170)*4.2);
+  const hy = t>420 && t<500 ? 445 + Math.sin((t-420)/80*Math.PI)*-130 : 445;
+  ctx.save();
+  ctx.translate(hx,hy);
+
+  ctx.fillStyle="rgba(255,0,80,.28)";
+  ctx.beginPath(); ctx.arc(0,0,105+Math.sin(t*.05)*12,0,Math.PI*2); ctx.fill();
+
+  ctx.fillStyle="#1a0624"; round(-42,-35,84,110,24); ctx.fill();
+  ctx.fillStyle="#d6c1ff"; ctx.beginPath(); ctx.arc(0,-58,31,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle="#111"; ctx.beginPath(); ctx.arc(-10,-61,4,0,Math.PI*2); ctx.arc(12,-61,4,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle="#111"; ctx.lineWidth=4; ctx.beginPath(); ctx.arc(2,-48,12,0,Math.PI); ctx.stroke();
+
+  ctx.strokeStyle="#7d2cff"; ctx.lineWidth=8; ctx.lineCap="round";
+  ctx.beginPath();
+  ctx.moveTo(-36,-10); ctx.lineTo(-85,-55);
+  ctx.moveTo(36,-10); ctx.lineTo(85,-55);
+  ctx.stroke();
+
+  ctx.fillStyle="#ffffff";
+  ctx.font="900 18px Arial";
+  ctx.textAlign="center";
+  ctx.fillText("HAMISH HUGHES",0,-108);
+  ctx.restore();
+
+  // cough cloud
+  if(!escape && t>285 && t<380){
+    ctx.fillStyle="rgba(180,255,120,.45)";
+    for(let i=0;i<18;i++){
+      const px=760 - (t-285)*2 + i*12;
+      const py=420 + Math.sin(t*.08+i)*35;
+      ctx.beginPath(); ctx.arc(px,py,14+Math.sin(i+t*.1)*5,0,Math.PI*2); ctx.fill();
+    }
+  }
+
+  if(!escape && t>420 && t<530){
+    ctx.fillStyle="rgba(255,0,0,.18)";
+    ctx.fillRect(0,0,W,H);
+  }
+
+  ctx.textAlign="center";
+  ctx.fillStyle="#fff";
+  ctx.font="900 34px Arial";
+  let line = "Nibscurfy is defeated.";
+  if(t>160) line = "A god-like figure spawns in...";
+  if(escape && t>285) line = "Hamish tries to cough the rage virus.";
+  if(escape && t>350) line = "Nain jetpacks away before Hamish can jump!";
+  if(!escape && t>285) line = "Hamish coughs the rage virus.";
+  if(!escape && t>420) line = "Hamish jumps on Nain.";
+  if(t>520) line = escape ? "Escape ending." : "The end.";
+  ctx.fillText(line,W/2,100);
+}
+
+function drawFinalBoss(){
+  const grd=ctx.createLinearGradient(0,0,0,H); grd.addColorStop(0,"#2b1020"); grd.addColorStop(.55,"#5a1e16"); grd.addColorStop(1,"#12070a"); ctx.fillStyle=grd; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle="rgba(255,120,40,.18)"; for(let i=0;i<8;i++){ctx.beginPath();ctx.arc(120+i*170,120+Math.sin(Date.now()*.002+i)*30,55,0,Math.PI*2);ctx.fill();}
+  for(const p of boss.platforms){ctx.fillStyle="#3a2631"; round(p.x,p.y,p.w,p.h,12); ctx.fill(); ctx.fillStyle="#7b4141"; ctx.fillRect(p.x,p.y,p.w,6);}
+  for(const pad of boss.pads){
+    ctx.fillStyle="#7c36ff"; round(pad.x,pad.y,pad.w,pad.h,9); ctx.fill();
+    ctx.fillStyle="#e5d4ff"; round(pad.x+8,pad.y+3,pad.w-16,5,3); ctx.fill();
+    ctx.fillStyle="#ffffff"; ctx.font="900 12px Arial"; ctx.textAlign="center";
+    ctx.fillText("BOUNCE",pad.x+pad.w/2,pad.y-8);
+    ctx.beginPath();
+    ctx.moveTo(pad.x+pad.w/2,pad.y-2);
+    ctx.lineTo(pad.x+pad.w/2-8,pad.y-14);
+    ctx.lineTo(pad.x+pad.w/2+8,pad.y-14);
+    ctx.closePath();
+    ctx.fill();
+  }
+  if(boss.healthPower && !boss.healthPower.got){ctx.fillStyle="#58ff78"; round(boss.healthPower.x,boss.healthPower.y,boss.healthPower.w,boss.healthPower.h,8); ctx.fill(); ctx.fillStyle="#fff"; ctx.font="900 20px Arial"; ctx.textAlign="center"; ctx.fillText("+",boss.healthPower.x+17,boss.healthPower.y+24);}
+  // monkey
+  const m=boss.monkey; ctx.save(); ctx.translate(m.x,m.y); ctx.fillStyle="#ff6a00"; ctx.beginPath(); ctx.arc(31,28,31,0,Math.PI*2); ctx.fill(); ctx.fillStyle="#7a2e10"; ctx.beginPath(); ctx.arc(31,34,21,0,Math.PI*2); ctx.fill(); ctx.fillStyle="#111"; ctx.beginPath(); ctx.arc(22,27,3,0,Math.PI*2); ctx.arc(40,27,3,0,Math.PI*2); ctx.fill(); ctx.fillStyle="#fff"; ctx.font="900 12px Arial"; ctx.textAlign="center"; ctx.fillText("FLAME MONKEY",31,-10); ctx.restore();
+  for(const f of fireballs){ctx.fillStyle="#ffb22e"; ctx.beginPath(); ctx.arc(f.x,f.y,f.r,0,Math.PI*2); ctx.fill(); ctx.fillStyle="#ff3b00"; ctx.beginPath(); ctx.arc(f.x-4,f.y+2,f.r*.55,0,Math.PI*2); ctx.fill();}
+  // Nibscurfy
+  const n=boss.n; ctx.save(); ctx.translate(n.x+n.w/2,n.y+n.h/2); ctx.scale(n.face,1); ctx.fillStyle=n.stun>0?"#ffd1d1":"#32203d"; round(-35,-30,70,72,18); ctx.fill(); ctx.fillStyle="#161020"; ctx.beginPath(); ctx.arc(0,-52,28,0,Math.PI*2); ctx.fill(); ctx.fillStyle="#ff3b3b"; ctx.beginPath(); ctx.arc(10,-55,4,0,Math.PI*2); ctx.fill(); ctx.strokeStyle="#ff8a00"; ctx.lineWidth=5; ctx.beginPath(); ctx.moveTo(-25,-74); ctx.lineTo(-45,-100); ctx.moveTo(25,-74); ctx.lineTo(45,-100); ctx.stroke(); ctx.scale(n.face,1); ctx.fillStyle="#fff"; ctx.font="900 15px Arial"; ctx.textAlign="center"; ctx.fillText("NIBSCURFY",0,-92); ctx.restore();
+  ctx.fillStyle="rgba(0,0,0,.55)"; round(370,24,540,30,15); ctx.fill(); ctx.fillStyle="#ff5656"; round(376,30,528*(boss.n.hp/boss.n.maxHp),18,9); ctx.fill(); ctx.fillStyle="#fff"; ctx.font="900 18px Arial"; ctx.textAlign="center"; ctx.fillText("Nibscurfy HP — only bounce hits work",W/2,47);
+  drawCharacter(player,true);
+  drawParticles(); drawText();
+}
+
+function drawMiniGame(){
+  if(miniMode === "choice") drawMiniChoice();
+  else if(miniMode === "scooter") drawScooterMini();
+  else if(miniMode === "tea") drawTeaMini();
+  else if(miniMode === "nainride") drawNainRideMini();
+  else if(miniMode === "boss") drawFinalBoss();
+  else if(miniMode === "endingCutscene") drawHamishCutscene();
+  else if(miniMode === "secretIntro") drawSecretIntro();
+  else if(miniMode === "hamishRun") drawHamishRun();
+  else if(miniMode === "crackerHeaven") drawCrackerHeaven();
+}
+
+function drawMiniChoice(){
+  const grd = ctx.createLinearGradient(0,0,0,H);
+  grd.addColorStop(0,"#241d3a");
+  grd.addColorStop(.55,"#44335f");
+  grd.addColorStop(1,"#15101f");
+  ctx.fillStyle = grd;
+  ctx.fillRect(0,0,W,H);
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#fff";
+  ctx.font = "900 48px Arial";
+  ctx.fillText("Final Mini Game Choice",W/2,92);
+
+  ctx.font = "bold 18px Arial";
+  ctx.fillStyle = "#eadfff";
+  ctx.fillText("Choose how Nain reaches the final boss.",W/2,128);
+
+  const pulse = Math.sin(miniChoicePulse)*4;
+  drawChoiceCard(55,190,350,330,"BEAM SCOOTER","Platformer scooter run. Crash and the whole run restarts.","1 / click",pulse);
+  drawChoiceCard(465,190,350,330,"TEA BREWING","Hard timed drag-and-drop brew with more steps, heat, and health penalties.","2 / click",-pulse);
+  drawChoiceCard(875,190,350,330,"NAINPACK NAINRIDE","Short Jetpack Joyride-style flight. Beat it to unlock a secret Hamish chase ending.","3 / click",pulse);
+
+  ctx.font = "900 20px Arial";
+  ctx.fillStyle = "#fff6a8";
+  ctx.fillText("1 = Scooter    2 = Tea Brewing    3 = Nainpack Nainride",W/2,615);
+}
+
+function drawChoiceCard(x,y,w,h,title,body,hint,bounce){
+  ctx.save();
+  ctx.translate(0,bounce);
+  ctx.fillStyle="rgba(0,0,0,.34)";
+  round(x,y,w,h,26); ctx.fill();
+  ctx.strokeStyle="rgba(255,255,255,.45)";
+  ctx.lineWidth=3; ctx.stroke();
+
+  ctx.fillStyle=title.includes("SCOOTER")?"#48e1ff":"#ffc66d";
+  ctx.font="900 32px Arial";
+  ctx.textAlign="center";
+  ctx.fillText(title,x+w/2,y+60);
+
+  if(title.includes("NAINPACK")){
+    ctx.fillStyle="#6dff8e"; round(x+150,y+92,52,76,18); ctx.fill();
+    ctx.fillStyle="#ffd24d"; round(x+180,y+112,35,38,10); ctx.fill();
+    ctx.fillStyle="#ff8b2e"; ctx.beginPath(); ctx.moveTo(x+150,y+162); ctx.lineTo(x+162,y+210); ctx.lineTo(x+176,y+162); ctx.closePath(); ctx.fill();
+  } else if(title.includes("SCOOTER")){
+    ctx.fillStyle="#1c1c1c"; round(x+130,y+115,125,32,14); ctx.fill();
+    ctx.fillStyle="#48e1ff"; round(x+165,y+80,55,55,16); ctx.fill();
+    ctx.fillStyle="#111"; ctx.beginPath(); ctx.arc(x+155,y+152,18,0,Math.PI*2); ctx.arc(x+235,y+152,18,0,Math.PI*2); ctx.fill();
+  } else {
+    ctx.fillStyle="#8b4a2a"; round(x+145,y+100,100,90,20); ctx.fill();
+    ctx.fillStyle="#d9f4ff"; ctx.beginPath(); ctx.arc(x+195,y+100,50,Math.PI,0); ctx.fill();
+  }
+
+  ctx.fillStyle="#eee";
+  ctx.font="bold 17px Arial";
+  wrapText(body,x+w/2,y+225,w-70,24);
+
+  ctx.fillStyle="#fff6a8";
+  ctx.font="900 17px Arial";
+  ctx.fillText(hint,x+w/2,y+h-28);
+  ctx.restore();
+}
+
+function drawScooterMini(){
+  const cam = scooter ? scooter.cam : 0;
+  const grd = ctx.createLinearGradient(0,0,0,H);
+  grd.addColorStop(0,"#6fe0ff");
+  grd.addColorStop(.5,"#c8f8ff");
+  grd.addColorStop(.51,"#5e5e68");
+  grd.addColorStop(1,"#24242a");
+  ctx.fillStyle=grd;
+  ctx.fillRect(0,0,W,H);
+
+  ctx.save();
+  ctx.translate(-cam,0);
+
+  ctx.fillStyle="rgba(255,255,255,.7)";
+  for(let x=100;x<scooter.world;x+=500) cloud(x,90+Math.sin(x)*20,1.0);
+
+  for(const p of scooter.platforms){
+    ctx.fillStyle="#383842"; round(p.x,p.y,p.w,p.h,10); ctx.fill();
+    ctx.fillStyle="#777780"; ctx.fillRect(p.x,p.y,p.w,5);
+  }
+
+  for(const r of scooter.ramps){
+    ctx.fillStyle="#5b5b65";
+    ctx.beginPath();
+    ctx.moveTo(r.x,r.y+r.h);
+    ctx.lineTo(r.x+r.w,r.y);
+    ctx.lineTo(r.x+r.w,r.y+r.h);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  for(const o of scooter.obstacles){
+    ctx.fillStyle="#ff4747";
+    round(o.x,o.y,o.w,o.h,8); ctx.fill();
+    ctx.fillStyle="#fff";
+    ctx.font="900 16px Arial";
+    ctx.textAlign="center";
+    ctx.fillText("!",o.x+o.w/2,o.y+28);
+  }
+
+  ctx.fillStyle="#fff";
+  ctx.font="900 30px Arial";
+  ctx.fillText("FINISH",scooter.world-160,580);
+  ctx.fillStyle="#35ff8d";
+  ctx.fillRect(scooter.world-190,610,20,40);
+
+  drawScooterNain(scooter.x,scooter.y);
+
+  ctx.restore();
+
+  ctx.fillStyle="rgba(0,0,0,.45)";
+  round(24,92,520,46,15); ctx.fill();
+  ctx.fillStyle="#fff";
+  ctx.font="900 22px Arial";
+  ctx.textAlign="left";
+  ctx.fillText("Beam Scooter: jump with W / Up / Space. Crash restarts everything.",42,123);
+}
+
+function drawScooterNain(x,y){
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.fillStyle="#1f1f25"; round(-5,26,72,18,9); ctx.fill();
+  ctx.fillStyle="#48e1ff"; round(18,0,35,38,12); ctx.fill();
+  ctx.strokeStyle="#1f1f25"; ctx.lineWidth=6;
+  ctx.beginPath(); ctx.moveTo(48,8); ctx.lineTo(70,-8); ctx.stroke();
+  ctx.fillStyle="#111"; ctx.beginPath(); ctx.arc(8,49,13,0,Math.PI*2); ctx.arc(58,49,13,0,Math.PI*2); ctx.fill();
+
+  ctx.fillStyle="#ffd24d"; round(20,-36,28,34,10); ctx.fill();
+  ctx.fillStyle="#f0bd80"; ctx.beginPath(); ctx.arc(34,-50,14,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle="#3b2414"; ctx.beginPath(); ctx.arc(34,-61,13,Math.PI,Math.PI*2); ctx.fill();
+  ctx.fillStyle="#111"; ctx.beginPath(); ctx.arc(39,-51,2,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+function drawTeaMini(){
+  const grd = ctx.createLinearGradient(0,0,0,H);
+  grd.addColorStop(0,"#e4c08a");
+  grd.addColorStop(1,"#85562e");
+  ctx.fillStyle=grd;
+  ctx.fillRect(0,0,W,H);
+
+  ctx.textAlign="center";
+  ctx.fillStyle="#fff";
+  ctx.font="900 48px Arial";
+  ctx.fillText("Tea Brewing",W/2,80);
+
+  ctx.font="bold 21px Arial";
+  ctx.fillStyle="#fff8d4";
+  ctx.fillText(teaGame.message,W/2,122);
+
+  ctx.fillStyle="rgba(0,0,0,.35)"; round(430,145,420,28,14); ctx.fill();
+  ctx.fillStyle=teaGame.timeLeft>15?"#7dff8f":"#ff6666"; round(434,149,412*Math.max(0,teaGame.timeLeft/55),20,10); ctx.fill();
+  ctx.fillStyle="#fff"; ctx.font="900 18px Arial"; ctx.fillText(`Tea Timer: ${Math.ceil(Math.max(0,teaGame.timeLeft))}s   Mistakes: ${teaGame.mistakes}`,W/2,167);
+
+  const t=teaGame.teapot;
+  ctx.fillStyle="rgba(0,0,0,.25)";
+  ctx.beginPath(); ctx.ellipse(t.x+t.w/2,t.y+t.h+20,115,24,0,0,Math.PI*2); ctx.fill();
+
+  ctx.fillStyle="#8b4a2a"; round(t.x,t.y+30,t.w,t.h-30,28); ctx.fill();
+  ctx.fillStyle="#5a2f1c"; round(t.x+45,t.y+10,70,40,18); ctx.fill();
+  ctx.strokeStyle="#8b4a2a"; ctx.lineWidth=12;
+  ctx.beginPath(); ctx.arc(t.x+t.w+18,t.y+82,38,-Math.PI/2,Math.PI/2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(t.x-4,t.y+70); ctx.lineTo(t.x-48,t.y+52); ctx.stroke();
+
+  ctx.fillStyle="#fff";
+  ctx.font="900 18px Arial";
+  ctx.fillText(`Step ${teaGame.step+1}/${teaGame.order.length}: ${teaGame.order[teaGame.step] || "Done"}`,W/2,510);
+  ctx.fillStyle="rgba(255,255,255,.18)"; round(480,530,320,20,10); ctx.fill();
+  ctx.fillStyle="#ffcf75"; round(484,534,312*(teaGame.step/teaGame.order.length),12,6); ctx.fill();
+
+  for(const item of teaGame.items){
+    if(item.done) continue;
+    drawTeaItem(item);
+  }
+
+  if(mouse.drag) drawTeaItem({...mouse.drag,x:mouse.x-mouse.drag.w/2,y:mouse.y-mouse.drag.h/2});
+
+  ctx.fillStyle="rgba(0,0,0,.35)";
+  round(350,560,580,54,20); ctx.fill();
+  ctx.fillStyle="#fff";
+  ctx.font="bold 18px Arial";
+  ctx.fillText("Drag the correct item onto the teapot. Wrong items just bounce back.",W/2,594);
+}
+
+function drawTeaItem(item){
+  ctx.fillStyle=item.color;
+  round(item.x,item.y,item.w,item.h,18); ctx.fill();
+  ctx.strokeStyle="#fff";
+  ctx.lineWidth=3; ctx.stroke();
+
+  ctx.fillStyle=item.name==="Milk" || item.name==="Water" ? "#111" : "#fff";
+  ctx.font="900 18px Arial";
+  ctx.textAlign="center";
+  ctx.fillText(item.label,item.x+item.w/2,item.y+43);
+}
+
+function wrapText(text,x,y,maxWidth,lineHeight){
+  const words=text.split(" ");
+  let line="";
+  for(const word of words){
+    const test=line+word+" ";
+    if(ctx.measureText(test).width>maxWidth && line){
+      ctx.fillText(line,x,y);
+      line=word+" ";
+      y+=lineHeight;
+    }else line=test;
+  }
+  ctx.fillText(line,x,y);
+}
+
+function drawPauseIndicator(){
+  if(!paused) return;
+  ctx.save();
+  ctx.fillStyle="rgba(0,0,0,.52)";
+  ctx.fillRect(0,0,W,H);
+  ctx.fillStyle="#fff";
+  ctx.font="900 64px Arial";
+  ctx.textAlign="center";
+  ctx.fillText("PAUSED",W/2,H/2-20);
+  ctx.font="900 22px Arial";
+  ctx.fillText("Press P to resume · M mute · R restart",W/2,H/2+30);
+  ctx.restore();
+}
+
+function render(){
+  if(miniMode){
+    drawMiniGame();
+    drawPauseIndicator();
+    return;
+  }
+
+  ctx.save();
+
+  const sx = screenShake > 0 ? (Math.random()-.5)*screenShake : 0;
+  const sy = screenShake > 0 ? (Math.random()-.5)*screenShake : 0;
+  ctx.translate(sx,sy);
+
+  drawSky();
+  drawSigns();
+  drawHammock();
+  drawNainpurDetails();
+  drawPlatforms();
+  drawItems();
+  drawGoal();
+  drawBreathCone();
+
+  for(const e of activeEnemies) drawCharacter(e,false);
+  drawCharacter(player,true);
+
+  drawParticles();
+  drawText();
+
+  ctx.restore();
+  drawPauseIndicator();
+}
+
+function updateHud(){
+  if(miniMode){
+    ui.levelName.textContent =
+      miniMode === "choice" ? "Mini Choice" :
+      miniMode === "scooter" ? "Beam Scooter" :
+      miniMode === "nainride" ? "Nainpack Nainride" :
+      miniMode === "boss" ? "Final Boss" :
+      miniMode === "secretIntro" ? "Secret Intro" :
+      miniMode === "hamishRun" ? "Hamish Chase" :
+      miniMode === "crackerHeaven" ? "Cracker Heaven" :
+      miniMode === "endingCutscene" ? "Ending" : "Tea Brewing";
+    ui.itemName.textContent =
+      miniMode === "tea" ? "Steps" :
+      miniMode === "boss" ? "Boss HP" :
+      (miniMode === "scooter" || miniMode === "nainride" || miniMode === "hamishRun") ? "Distance" : "Goal";
+    ui.items.textContent =
+      miniMode === "tea" && teaGame ? teaGame.step :
+      miniMode === "scooter" && scooter ? Math.floor(scooter.x/100) :
+      miniMode === "nainride" && nainride ? Math.floor(nainride.x/100) :
+      miniMode === "hamishRun" && hamishRun ? Math.floor(player.x/100) :
+      miniMode === "boss" && boss ? (boss.n.maxHp-boss.n.hp) : 0;
+    ui.total.textContent =
+      miniMode === "tea" && teaGame ? teaGame.order.length :
+      miniMode === "scooter" && scooter ? Math.floor(scooter.world/100) :
+      miniMode === "nainride" && nainride ? Math.floor(nainride.world/100) :
+      miniMode === "hamishRun" && hamishRun ? Math.floor(hamishRun.world/100) :
+      miniMode === "boss" && boss ? boss.n.maxHp : 1;
+    ui.score.textContent = player.score;
+    ui.timer.textContent = (running ? ((performance.now()-runStart)/1000) : finalTime).toFixed(2);
+    ui.hp.style.width = player.health + "%";
+    ui.pow.style.width = "0%";
+    return;
+  }
+  ui.levelName.textContent = L().name;
+  ui.itemName.textContent = L().itemName;
+  ui.items.textContent = player.items;
+  ui.total.textContent = levelItems.length;
+  ui.score.textContent = player.score;
+  ui.timer.textContent = (running ? ((performance.now()-runStart)/1000) : finalTime).toFixed(2);
+  ui.hp.style.width = player.health + "%";
+  ui.pow.style.width = Math.max(player.mint/(15*60), player.coffee/(15*60), player.invis/(3*60), player.magnet/(12*60), player.shield>0?1:0)*100 + "%";
+}
+
+const FIXED_STEP = 1000 / 60;
+let lastFrameTime = performance.now();
+let accumulator = 0;
+
+function fixedUpdate(){
+  if(sFastFallBlocked>0) sFastFallBlocked--;
+  if(fastFallPulse>0) fastFallPulse--;
+  if(!playerIsActuallyAirborne()){
+    fastFallPulse = 0;
+    player.fastFallSound = false;
+    keys.s = false;
+    keys.S = false;
+    keys.ArrowDown = false;
+  }
+  updateMusic();
+  if(miniMode){
+    updateMiniGame();
+    updateParticles();
+    updateHud();
+    return;
+  }
+  updatePlayer();
+  updateEnemies();
+  updateCollect();
+  updateParticles();
+  updateCamera();
+  updateHud();
+}
+
+function loop(now){
+  const frameTime = Math.min(100, now - lastFrameTime);
+  lastFrameTime = now;
+
+  if(running && !paused){
+    accumulator += frameTime;
+
+    // Run gameplay at a fixed 60 updates per second on all PCs.
+    // Rendering may happen at 60Hz, 144Hz, 240Hz, etc., but physics speed stays identical.
+    while(accumulator >= FIXED_STEP){
+      fixedUpdate();
+      accumulator -= FIXED_STEP;
+    }
+  } else {
+    accumulator = 0;
+  }
+
+  render();
+  requestAnimationFrame(loop);
+}
+
+
+function canvasPos(evt){
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x:(evt.clientX-rect.left) * (canvas.width/rect.width),
+    y:(evt.clientY-rect.top) * (canvas.height/rect.height)
+  };
+}
+
+function handleMiniClick(x,y){
+  initAudio();
+  if(miniMode === "choice"){
+    if(x>=55 && x<=405 && y>=190 && y<=520){sfx("click"); startScooter();}
+    if(x>=465 && x<=815 && y>=190 && y<=520){sfx("click"); startTeaMini();}
+    if(x>=875 && x<=1225 && y>=190 && y<=520){sfx("click"); startNainRide();}
+  }
+}
+
+canvas.addEventListener("mousedown", e => {
+  const p = canvasPos(e);
+  mouse.x = p.x; mouse.y = p.y; mouse.down = true;
+
+  if(miniMode === "choice"){
+    handleMiniClick(p.x,p.y);
+    return;
+  }
+
+  if(miniMode === "tea" && teaGame){
+    for(const item of teaGame.items){
+      if(item.done) continue;
+      if(p.x>=item.x && p.x<=item.x+item.w && p.y>=item.y && p.y<=item.y+item.h){
+        mouse.drag = item;
+        return;
+      }
+    }
+  }
+});
+
+canvas.addEventListener("mousemove", e => {
+  const p = canvasPos(e);
+  mouse.x = p.x; mouse.y = p.y;
+});
+
+canvas.addEventListener("mouseup", e => {
+  const p = canvasPos(e);
+  mouse.x = p.x; mouse.y = p.y; mouse.down = false;
+
+  if(miniMode === "tea" && teaGame && mouse.drag){
+    const item = mouse.drag;
+    const t = teaGame.teapot;
+    const droppedOnTeapot = p.x>=t.x && p.x<=t.x+t.w && p.y>=t.y && p.y<=t.y+t.h;
+    const needed = teaGame.order[teaGame.step];
+
+    if(droppedOnTeapot && item.name === needed){
+      item.done = true;
+      teaGame.step++;
+      teaGame.heat = Math.max(0, teaGame.heat - 8);
+      player.score += 500;
+      sfx("collect");
+      part(t.x+t.w/2,t.y+70,24,"tea");
+      if(teaGame.step >= teaGame.order.length){
+        teaGame.message = "Tea complete!";
+        finishTeaMini();
+      } else {
+        teaGame.message = "Good. Now drag " + teaGame.order[teaGame.step] + ".";
+      }
+    } else if(droppedOnTeapot) {
+      teaGame.mistakes++;
+      teaGame.timeLeft = Math.max(0, teaGame.timeLeft - 8);
+      teaGame.heat = Math.min(100, teaGame.heat + 12);
+      player.health = Math.max(0, player.health - 12);
+      teaGame.message = "Wrong item. You need " + needed + ". -8 seconds, -12 health, more heat.";
+      part(p.x,p.y,18,"hit");
+      if(player.health <= 0) failTeaMini("Tea brewing health ran out!");
+      updateHud();
+    }
+    mouse.drag = null;
+  }
+});
+
+window.addEventListener("keydown", e => {
+  initAudio();
+  if(e.key === "s" || e.key === "S" || e.key === "ArrowDown"){
+    const now = performance.now();
+    const wasHeld = keys.s || keys.S || keys.ArrowDown;
+    sTapTimes = sTapTimes.filter(t => now - t < 420);
+
+    if(!wasHeld){
+      sTapTimes.push(now);
+      if(sTapTimes.length >= 3){
+        sFastFallBlocked = 150;
+        fastFallPulse = 0;
+        sTapTimes = [];
+        keys.s = false;
+        keys.S = false;
+        keys.ArrowDown = false;
+        player.fastFallSound = false;
+        msg = "Fast-fall cancelled.";
+        msgTimer = 45;
+        e.preventDefault();
+        return;
+      }
+
+      if(sFastFallBlocked <= 0 && playerIsActuallyAirborne()){
+        fastFallPulse = 8;
+      }
+    }
+
+    // Do not keep a sticky down key on ground. It only creates a short airborne pulse.
+    if(!playerIsActuallyAirborne()){
+      fastFallPulse = 0;
+      keys.s = false;
+      keys.S = false;
+      keys.ArrowDown = false;
+      e.preventDefault();
+      return;
+    }
+  }
+  keys[e.key] = true;
+  if(e.key === "r" || e.key === "R"){ resetGame(); return; }
+  if(e.key === "m" || e.key === "M"){ setMuted(!muted); return; }
+  if(e.key === "p" || e.key === "P"){ togglePause(); return; }
+  if(e.key === "h" || e.key === "H"){ showHelpOverlay(); return; }
+  if((keys.t || keys.T) && (keys.y || keys.Y)){
+    ui.overlay.style.display = "none";
+    paused = false;
+    bossCheckpoint = false;
+    miniMode = "choice";
+    running = true;
+    player.health = Math.max(player.health, 100);
+    player.score = player.score || 0;
+    totalScore = player.score;
+    msg = "DEBUG: Mini-game selection unlocked.";
+    msgTimer = 90;
+    updateHud();
+    return;
+  }
+  if(miniMode === "choice"){
+    if(e.key === "1"){sfx("click"); startScooter();}
+    if(e.key === "2"){sfx("click"); startTeaMini();}
+    if(e.key === "3"){sfx("click"); startNainRide();}
+  }
+  if(["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"," "].includes(e.key)) e.preventDefault();
+});
+window.addEventListener("keyup", e => {
+  keys[e.key] = false;
+  if(e.key === "s" || e.key === "S" || e.key === "ArrowDown"){
+    fastFallPulse = 0;
+    keys.s = false;
+    keys.S = false;
+    keys.ArrowDown = false;
+  }
+});
+
+document.querySelectorAll(".touchBtn").forEach(btn => {
+  const key = btn.dataset.key;
+  const on = e => {e.preventDefault(); keys[key] = true; if(key==="ArrowUp") keys.w = true};
+  const off = e => {e.preventDefault(); keys[key] = false; if(key==="ArrowUp") keys.w = false};
+  btn.addEventListener("pointerdown",on);
+  btn.addEventListener("pointerup",off);
+  btn.addEventListener("pointerleave",off);
+  btn.addEventListener("pointercancel",off);
+});
+
+document.getElementById("startBtn").onclick = resetGame;
+loadLevel(0,true);
+running = false;
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
